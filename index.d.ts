@@ -215,6 +215,7 @@ export declare class BeeEntity {
   pool: BeePool | null;
   animator: BeeAnimator | null;
   animatorContext?: () => unknown;
+  alpha: number;
   readonly children: BeeEntity[];
 
   constructor(
@@ -980,6 +981,165 @@ export declare class BeeTimerClock {
   clear(): this;
 }
 
+export type BeeEaseName =
+  | "linear"
+  | "quadIn"
+  | "quadOut"
+  | "quadInOut"
+  | "cubicIn"
+  | "cubicOut"
+  | "cubicInOut"
+  | "quartIn"
+  | "quartOut"
+  | "quartInOut"
+  | "sineIn"
+  | "sineOut"
+  | "sineInOut"
+  | "expoIn"
+  | "expoOut"
+  | "expoInOut"
+  | "backIn"
+  | "backOut"
+  | "backInOut"
+  | "elasticOut"
+  | "bounceOut";
+
+export type BeeEaseFn = (t: number) => number;
+
+export declare const BeeEase: Record<BeeEaseName, BeeEaseFn>;
+
+export declare function resolveEase(nameOrFn?: BeeEaseName | BeeEaseFn | string): BeeEaseFn;
+
+export declare const BEE_TWEEN_DEFAULTS: Readonly<{
+  duration: number;
+  delay: number;
+  ease: BeeEaseName;
+  unscaled: boolean;
+  yoyo: boolean;
+  repeat: number;
+  autoStart: boolean;
+  overwrite: boolean;
+}>;
+
+export interface BeeTweenOptions {
+  target?: object | null;
+  to?: Record<string, number>;
+  from?: Record<string, number> | null;
+  mode?: "to" | "from" | "fromTo";
+  duration?: number;
+  delay?: number;
+  ease?: BeeEaseName | BeeEaseFn | string;
+  unscaled?: boolean;
+  useUnscaledTime?: boolean;
+  yoyo?: boolean;
+  repeat?: number;
+  autoStart?: boolean;
+  overwrite?: boolean;
+  clock?: BeeTweenClock | null;
+  onStart?: (tween: BeeTween) => void;
+  onUpdate?: (tween: BeeTween) => void;
+  onComplete?: (tween: BeeTween) => void;
+}
+
+export declare class BeeTween {
+  target: object | null;
+  duration: number;
+  delay: number;
+  ease: BeeEaseFn;
+  unscaled: boolean;
+  yoyo: boolean;
+  repeat: number;
+  overwrite: boolean;
+  elapsed: number;
+  running: boolean;
+  finished: boolean;
+  cancelled: boolean;
+  loop: boolean;
+  clock: BeeTweenClock | null;
+  onStart: ((tween: BeeTween) => void) | null;
+  onUpdate: ((tween: BeeTween) => void) | null;
+  onComplete: ((tween: BeeTween) => void) | null;
+  readonly paused: boolean;
+  readonly progress: number;
+  readonly keys: string[];
+
+  constructor(options?: BeeTweenOptions);
+
+  static to(target: object, props: Record<string, number>, durationOrOptions?: number | BeeTweenOptions): BeeTween;
+  static from(target: object, props: Record<string, number>, durationOrOptions?: number | BeeTweenOptions): BeeTween;
+  static fromTo(
+    target: object,
+    from: Record<string, number>,
+    to: Record<string, number>,
+    durationOrOptions?: number | BeeTweenOptions
+  ): BeeTween;
+
+  start(): this;
+  pause(): this;
+  resume(): this;
+  cancel(): this;
+  steal(target: object, keys: string[]): this;
+  seek(seconds: number): this;
+  update(dtOrTime: number | BeeTime | { dt?: number; unscaledDt?: number }): this;
+}
+
+export declare class BeeTweenClock {
+  readonly size: number;
+  add<T extends { update: Function }>(item: T): T;
+  remove(item: object): this;
+  overwrite(source: { target?: object | null; keys?: string[] }): this;
+  kill(target: object): this;
+  tick(time: BeeTime): this;
+  clear(): this;
+}
+
+export interface BeeTimelineOptions {
+  unscaled?: boolean;
+  useUnscaledTime?: boolean;
+  yoyo?: boolean;
+  repeat?: number;
+  autoStart?: boolean;
+  clock?: BeeTweenClock | null;
+  onComplete?: (timeline: BeeTimeline) => void;
+}
+
+export declare class BeeTimeline {
+  unscaled: boolean;
+  yoyo: boolean;
+  repeat: number;
+  elapsed: number;
+  duration: number;
+  running: boolean;
+  finished: boolean;
+  cancelled: boolean;
+  loop: boolean;
+  clock: BeeTweenClock | null;
+  onComplete: ((timeline: BeeTimeline) => void) | null;
+  readonly paused: boolean;
+  readonly progress: number;
+
+  constructor(options?: BeeTimelineOptions);
+
+  to(target: object, props: Record<string, number>, durationOrOptions?: number | (BeeTweenOptions & { at?: number })): this;
+  from(target: object, props: Record<string, number>, durationOrOptions?: number | (BeeTweenOptions & { at?: number })): this;
+  fromTo(
+    target: object,
+    from: Record<string, number>,
+    to: Record<string, number>,
+    durationOrOptions?: number | (BeeTweenOptions & { at?: number })
+  ): this;
+  wait(seconds: number): this;
+  call(fn: (timeline: BeeTimeline) => void, at?: number): this;
+  set(target: object, props: Record<string, unknown>, at?: number): this;
+  start(): this;
+  pause(): this;
+  resume(): this;
+  cancel(): this;
+  steal(target: object, keys: string[]): this;
+  killTarget(target: object): this;
+  update(dtOrTime: number | BeeTime | { dt?: number; unscaledDt?: number }): this;
+}
+
 export interface BeeTimeOptions {
   maxDelta?: number;
   timeScale?: number;
@@ -1379,6 +1539,7 @@ export declare class BeeEngine {
   bullets: BeePool<BeeBullet> | null;
   time: BeeTime;
   timers: BeeTimerClock;
+  tweens: BeeTweenClock;
   save: BeeSaveStore;
   debug: BeeLadybug;
   lastTime: number;
@@ -1409,6 +1570,15 @@ export declare class BeeEngine {
   setTimeScale(scale: number): this;
   after(duration: number, onComplete?: BeeTimerCallback | null, options?: BeeTimerOptions): BeeTimer;
   every(duration: number, onComplete?: BeeTimerCallback | null, options?: BeeTimerOptions): BeeTimer;
+  to(target: object, props: Record<string, number>, durationOrOptions?: number | BeeTweenOptions): BeeTween;
+  from(target: object, props: Record<string, number>, durationOrOptions?: number | BeeTweenOptions): BeeTween;
+  fromTo(
+    target: object,
+    from: Record<string, number>,
+    to: Record<string, number>,
+    durationOrOptions?: number | BeeTweenOptions
+  ): BeeTween;
+  timeline(options?: BeeTimelineOptions): BeeTimeline;
   stop(): void;
   destroy(): void;
 

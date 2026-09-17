@@ -1,138 +1,98 @@
-import { BeeEngine, BeeEntity, BeeAnimatedSprite } from './BeeEngine.js';
+import { BeeEngine, BeeEntity } from './BeeEngine.js';
 
 const gioco = new BeeEngine('testCanvas', 800, 600);
 gioco.enableAutoResize(800, 600, 100);
 window.gioco = gioco;
 
-const CLIP_COLOR = {
-    0: '#6b7280',
-    1: '#9ca3af',
-    2: '#f0a202',
-    3: '#f5b942',
-    4: '#e09b00',
-    5: '#ffcc66',
-    6: '#4a90e2',
-    7: '#ef4444',
-    8: '#dc2626',
-    9: '#b91c1c'
-};
-
-const sheet = {
-    frameWidth: 64,
-    frameHeight: 64,
-    drawFrame(ctx, frameIndex, x, y, w, h) {
-        ctx.fillStyle = CLIP_COLOR[frameIndex] || '#888';
-        ctx.fillRect(x, y, w, h);
-        ctx.strokeStyle = '#111';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(x, y, w, h);
-        ctx.fillStyle = '#111';
-        ctx.font = 'bold 16px monospace';
-        ctx.fillText(String(frameIndex), x + 8, y + 22);
-    }
-};
-
-const sprite = new BeeAnimatedSprite(sheet, {
-    animation: 'idle',
-    animations: {
-        idle: { frames: [0, 1], fps: 4, loop: true },
-        run: { frames: [2, 3, 4, 5], fps: 10, loop: true },
-        jump: { frames: [6], fps: 8, loop: false },
-        attack: { frames: [7, 8, 9], fps: 12, loop: false }
-    }
-});
-
-class Actor extends BeeEntity {
-    constructor() {
-        super(368, 268, 64, 64);
-        this.grounded = true;
-        this.wantsAttack = false;
-        this.airTime = 0;
-        this.sprite = sprite;
-        this.animator = gioco.createAnimator(sprite)
-            .add('idle', { clip: 'idle', initial: true })
-            .add('run', { clip: 'run', priority: 1 })
-            .add('jump', { clip: 'jump', loop: false, priority: 2 })
-            .add('attack', {
-                clip: 'attack',
-                loop: false,
-                lock: true,
-                priority: 10,
-                exitTo: 'idle',
-                onEnter: () => { this.wantsAttack = false; }
-            })
-            .when('idle', 'run', (actor) => actor.grounded && Math.abs(actor.vx) > 1)
-            .when('run', 'idle', (actor) => actor.grounded && Math.abs(actor.vx) <= 1)
-            .when(['idle', 'run'], 'jump', (actor) => !actor.grounded)
-            .when('jump', 'idle', (actor) => actor.grounded && Math.abs(actor.vx) <= 1)
-            .when('jump', 'run', (actor) => actor.grounded && Math.abs(actor.vx) > 1)
-            .when('*', 'attack', (actor) => actor.wantsAttack)
-            .start();
-    }
-
-    update(dt, input, engine) {
-        this.vx = 0;
-        if (input) {
-            if (input.isPressed('ArrowRight') || input.isPressed('KeyD')) this.vx = 180;
-            if (input.isPressed('ArrowLeft') || input.isPressed('KeyA')) this.vx = -180;
-            if (this.grounded && (input.wasPressed('Space') || input.wasPressed('ArrowUp') || input.wasPressed('KeyW'))) {
-                this.grounded = false;
-                this.airTime = 0.45;
-            }
-            if (input.wasPressed('KeyX') || input.wasPressed('KeyJ')) {
-                this.wantsAttack = true;
-            }
-        }
-
-        if (!this.grounded) {
-            this.airTime -= dt;
-            if (this.airTime <= 0) {
-                this.grounded = true;
-                this.airTime = 0;
-            }
-        }
-
-        super.update(dt, input, engine);
-        if (this.sprite) this.sprite.flipX = this.vx < 0;
+class Box extends BeeEntity {
+    constructor(x, y, color, label) {
+        super(x, y, 72, 72);
+        this.color = color;
+        this.label = label;
+        this.alpha = 1;
+        this.transform.setPivot(36, 36);
     }
 
     draw(ctx) {
-        if (this.sprite) {
-            this.sprite.draw(ctx, this.worldX, this.worldY, { width: this.width, height: this.height });
-        }
+        ctx.save();
+        this.applyWorldTransform(ctx);
+        ctx.fillStyle = this.color;
+        ctx.fillRect(0, 0, this.width, this.height);
+        ctx.strokeStyle = '#111';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(0, 0, this.width, this.height);
+        ctx.fillStyle = '#111';
+        ctx.font = 'bold 13px monospace';
+        ctx.fillText(this.label, 8, 24);
+        ctx.restore();
     }
 }
 
-const hero = new Actor();
+const a = new Box(80, 220, '#f0a202', 'to');
+const b = new Box(80, 330, '#4a90e2', 'yoyo');
+const c = new Box(80, 440, '#ef4444', 'tl');
+c.alpha = 0.25;
+c.scaleX = 0.4;
+c.scaleY = 0.4;
+
+let loops = 0;
+let lastCall = '—';
+
+function playCut() {
+    gioco.tweens.kill(c);
+    c.x = 80;
+    c.y = 440;
+    c.alpha = 0.25;
+    c.scaleX = 0.4;
+    c.scaleY = 0.4;
+    c.rotation = 0;
+    gioco.timeline()
+        .to(c, { scaleX: 1, scaleY: 1, alpha: 1 }, { duration: 0.45, ease: 'backOut' })
+        .to(c, { x: 620 }, { duration: 0.55, ease: 'quadOut' })
+        .wait(0.12)
+        .to(c, { rotationDegrees: 360, y: 400 }, { duration: 0.4, ease: 'sineInOut' })
+        .call(() => { lastCall = 'timeline ok'; })
+        .to(c, { alpha: 0.35 }, { duration: 0.25, ease: 'quadIn' })
+        .start();
+}
+
+gioco.to(a, { x: 640 }, { duration: 1.4, ease: 'quadInOut', repeat: Infinity, yoyo: true });
+gioco.to(b, { x: 640, rotationDegrees: 180 }, { duration: 0.9, ease: 'bounceOut', repeat: Infinity, yoyo: true });
+playCut();
+gioco.every(2.8, () => {
+    loops += 1;
+    playCut();
+});
 
 const scene = {
-    entities: [hero],
+    entities: [a, b, c],
 
     draw(ctx) {
         ctx.fillStyle = '#0d1020';
         ctx.fillRect(0, 0, 800, 600);
 
-        ctx.fillStyle = '#1a1f33';
-        ctx.fillRect(0, 360, 800, 8);
-
         ctx.fillStyle = '#ffe08a';
         ctx.font = 'bold 20px monospace';
-        ctx.fillText('BeeAnimator — idle → run → jump, lock attacco', 24, 36);
+        ctx.fillText('BeeTween + BeeTimeline — proprietà, non cooldown', 24, 36);
         ctx.font = '14px monospace';
         ctx.fillStyle = '#c8c8c8';
         ctx.fillText(
-            `stato ${hero.animator.current}   lock ${hero.animator.locked ? 'sì' : 'no'}   clip ${sprite.clip}   frame ${sprite.currentFrameIndex}`,
+            `tweens ${gioco.tweens.size}   cut #${loops}   ${lastCall}   pausa ferma lo scalato`,
             24,
             58
         );
-        ctx.fillText('A/D o frecce = corri. Spazio = salto. X o J = attacco (non interrompibile). F2 Ladybug.', 24, 80);
+        ctx.fillText('Click = replay timeline sul rosso. F2 Ladybug.', 24, 80);
     }
 };
 
-gioco.scenes.add('animator', scene);
-gioco.scenes.change('animator');
+gioco.scenes.add('tween', scene);
+gioco.scenes.change('tween');
 gioco.enableLadybug();
 gioco.start();
+
+gioco.canvas.addEventListener('pointerdown', () => {
+    playCut();
+});
 
 function bindControls() {
     const pauseBtn = document.getElementById('btnPause');

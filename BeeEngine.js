@@ -8,6 +8,8 @@ import { BeeTime, BEE_TIME_DEFAULTS } from './src/core/BeeTime.js';
 import { BeeSceneManager } from './src/core/BeeSceneManager.js';
 import { BeeSave, BeeSaveStore, BEE_SAVE_DEFAULTS, BEE_SAVE_STATUS } from './src/core/BeeSave.js';
 import { BeeTimer, BeeTimerClock, BEE_TIMER_DEFAULTS } from './src/core/BeeTimer.js';
+import { BeeTween, BeeTweenClock, BeeEase, BEE_TWEEN_DEFAULTS } from './src/core/BeeTween.js';
+import { BeeTimeline } from './src/core/BeeTimeline.js';
 import { BeeGrid } from './src/core/BeeGrid.js';
 import { BeePool, BEE_POOL_DEFAULTS } from './src/core/BeePool.js';
 import { BeeLadybug, BEE_LADYBUG_DEFAULTS } from './src/debug/BeeLadybug.js';
@@ -93,6 +95,7 @@ export class BeeEngine {
         });
         this.time = new BeeTime();
         this.timers = new BeeTimerClock();
+        this.tweens = new BeeTweenClock();
         this.save = new BeeSaveStore();
         this.debug = new BeeLadybug(this);
         this.debug.attach();
@@ -236,6 +239,29 @@ export class BeeEngine {
         });
     }
 
+    to(target, props, durationOrOptions) {
+        return BeeTween.to(target, props, this.#tweenOpts(durationOrOptions));
+    }
+
+    from(target, props, durationOrOptions) {
+        return BeeTween.from(target, props, this.#tweenOpts(durationOrOptions));
+    }
+
+    fromTo(target, from, to, durationOrOptions) {
+        return BeeTween.fromTo(target, from, to, this.#tweenOpts(durationOrOptions));
+    }
+
+    timeline(options = {}) {
+        return new BeeTimeline({ ...options, clock: this.tweens });
+    }
+
+    #tweenOpts(durationOrOptions) {
+        if (typeof durationOrOptions === 'number') {
+            return { duration: durationOrOptions, clock: this.tweens };
+        }
+        return { ...(durationOrOptions || {}), clock: this.tweens };
+    }
+
     enableLadybug(options = {}) {
         this.debug.configure(options).attach().show();
         return this.debug;
@@ -271,6 +297,7 @@ export class BeeEngine {
             this.debug.destroy();
         }
         if (this.timers) this.timers.clear();
+        if (this.tweens) this.tweens.clear();
         if (this.physics) this.physics.clear();
         if (this.pools) {
             for (const pool of this.pools.values()) {
@@ -328,6 +355,7 @@ export class BeeEngine {
 
         this.time.tick(timestamp);
         this.timers.tick(this.time);
+        this.tweens.tick(this.time);
         const dt = this.time.dt;
 
         if (!this.time.paused) {
@@ -467,6 +495,13 @@ export class BeeEngine {
     drawEntity(ctx, entity) {
         if (!entity || entity.visible === false || entity.destroyed) return;
 
+        const alpha = typeof entity.alpha === 'number' ? entity.alpha : 1;
+        const fade = alpha < 1;
+        if (fade) {
+            ctx.save();
+            ctx.globalAlpha *= Math.max(0, alpha);
+        }
+
         if (typeof entity.draw === 'function') {
             const bounds = this.getEntityDrawBounds(entity);
             const hasSize = bounds.width > 0 && bounds.height > 0;
@@ -476,10 +511,13 @@ export class BeeEngine {
         }
 
         const children = entity.children;
-        if (!children || children.length === 0) return;
-        for (let i = 0; i < children.length; i++) {
-            this.drawEntity(ctx, children[i]);
+        if (children && children.length > 0) {
+            for (let i = 0; i < children.length; i++) {
+                this.drawEntity(ctx, children[i]);
+            }
         }
+
+        if (fade) ctx.restore();
     }
 
     checkCollision(rect1, rect2) {
@@ -538,6 +576,7 @@ export {
     BEE_TRANSFORM_DEFAULTS,
     BEE_TIME_DEFAULTS,
     BEE_TIMER_DEFAULTS,
+    BEE_TWEEN_DEFAULTS,
     BEE_SAVE_DEFAULTS,
     BEE_SAVE_STATUS,
     BEE_LADYBUG_DEFAULTS,
@@ -561,6 +600,10 @@ export {
     BeeText,
     BeeTimer,
     BeeTimerClock,
+    BeeEase,
+    BeeTween,
+    BeeTweenClock,
+    BeeTimeline,
     BeeRectCollider,
     BeeAssetManager,
     BeeMenuScene,

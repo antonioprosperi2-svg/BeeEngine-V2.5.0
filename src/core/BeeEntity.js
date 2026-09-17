@@ -84,6 +84,7 @@ export class BeeEntity {
         this.body = null;
         this.pool = null;
         this.animator = null;
+        this.alpha = 1;
         this.#torn = false;
     }
 

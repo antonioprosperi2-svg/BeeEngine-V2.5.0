@@ -10,7 +10,7 @@ La versione 2.7 rifà **BeeTimer**: `start` / `pause` / `resume` / `cancel`, `gi
 BeeEngine-V2.7/
 ├── index.html                  # Punto di ingresso HTML e configurazione Canvas
 ├── index.js                    # Barrel ESM (re-export di BeeEngine.js)
-├── main.js                     # Demo visiva (BeeAnimator: idle / run / jump / attack)
+├── main.js                     # Demo visiva (BeeTween + BeeTimeline)
 ├── BeeEngine.js                # Il CUORE del motore (Core Loop & System Coordinator)
 ├── README.md                   # Documentazione ufficiale e specifiche tecniche
 ├── package.json                # Manifest di configurazione per la pubblicazione NPM
@@ -20,7 +20,7 @@ BeeEngine-V2.7/
 │   ├── audio/                  # Effetti sonori (.mp3) e musiche di sottofondo
 │   └── images/                 # Texture dei personaggi (.png), sprite e sfondi
 └── src/
-    ├── core/                   # BeePool, BeeTransform, BeeTime, BeeEntity, BeeTimer, scene, asset, save, grid
+    ├── core/                   # BeeTween, BeeTimeline, BeePool, BeeTransform, BeeTime, BeeEntity, BeeTimer, scene, asset, save, grid
     ├── gameplay/               # Player, enemy, platform, collectible, menu
     ├── graphics/               # BeeAnimator, camera, sprite, tilemap, text, particles
     ├── input/                  # Tastiera, mouse, joystick, touch, button
@@ -126,7 +126,33 @@ actor.animator = animator;
 | `when('*', to, pred)` | da qualsiasi stato |
 | `play(name, { force })` | richiesta manuale; `force` rompe il lock |
 
-`BeeAnimatedSprite.play(name, { restart: true })` e `sprite.finished` esistono perché l'animator deve sapere quando l'attacco è chiuso. Versione pacchetto resta **2.7.0**: Animator entra nel prossimo 2.8 insieme ad altre fondamenta.
+`BeeAnimatedSprite.play(name, { restart: true })` e `sprite.finished` esistono perché l'animator deve sapere quando l'attacco è chiuso. Versione pacchetto resta **2.7.0**: Animator, Tween e Timeline escono insieme nel 2.8.
+
+## 🎞 BeeTween + BeeTimeline — interpolare proprietà, non un cooldown
+
+`BeeTimer` conta i secondi. `BeeTween` **scrive** `x`, `alpha`, `scaleX`, `volume` ogni frame, con easing. `BeeTimeline` mette tween, attese e callback in sequenza (o in parallelo con `at`).
+
+`gioco.tweens` ticka ogni frame come i timer: scalato in pausa si ferma, `unscaled: true` no. `entity.alpha` (default 1) è applicato in `drawEntity`.
+
+```javascript
+gioco.to(box, { x: 640, alpha: 1 }, { duration: 0.6, ease: 'backOut' });
+
+const cut = gioco.timeline()
+    .to(logo, { scaleX: 1, scaleY: 1 }, { duration: 0.4, ease: 'backOut' })
+    .wait(0.15)
+    .to(logo, { y: 80 }, { duration: 0.35, ease: 'quadOut' })
+    .to(panel, { alpha: 1 }, { duration: 0.3, at: 0.2 })
+    .call(() => ready = true)
+    .start();
+```
+
+| API | Contratto |
+| --- | --- |
+| `gioco.to` / `from` / `fromTo` | un tween, overwrite sulle stesse chiavi |
+| `ease` | nome (`quadOut`, `backOut`, `bounceOut`…) o funzione `t => t` |
+| `yoyo` + `repeat` | andata/ritorno; `repeat: Infinity` resta sul clock |
+| `timeline().to(..., { at: 0 })` | parallelo all'inizio |
+| `gioco.tweens.kill(target)` | spegne i tween su quell'oggetto |
 
 ## 🎬 BeeSceneManager — replace, non stack
 
