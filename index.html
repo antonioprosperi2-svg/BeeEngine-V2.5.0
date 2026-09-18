@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="data:,">
-    <title>BeeEngine — BeeTween demo</title>
+    <title>BeeEngine — BeeAudioMixer demo</title>
     <style>
         body,
         html {
@@ -43,11 +43,7 @@
         document.getElementById('btnResume').addEventListener('click', () => window.gioco && window.gioco.resume());
         document.getElementById('btnStop').addEventListener('click', () => window.gioco && window.gioco.stop());
         document.getElementById('btnAudio').addEventListener('click', () => {
-            const musica = window.gioco && window.gioco.getAsset('musicaSfondo');
-            const suono = window.gioco && window.gioco.getAsset('suonoCollisione');
-            if (musica) {
-                window.gioco.playMusic(musica, 0.4);
-            }
+            if (window.gioco && window.gioco.audio) window.gioco.audio.unlock();
         });
     </script>
     <!-- Il demo principale dei nemici è gestito in main.js -->

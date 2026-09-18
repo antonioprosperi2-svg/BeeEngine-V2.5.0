@@ -13,6 +13,7 @@ import { BeeTimeline } from './src/core/BeeTimeline.js';
 import { BeeGrid } from './src/core/BeeGrid.js';
 import { BeePool, BEE_POOL_DEFAULTS } from './src/core/BeePool.js';
 import { BeeLadybug, BEE_LADYBUG_DEFAULTS } from './src/debug/BeeLadybug.js';
+import { BeeAudioMixer, BeeAudioBus, BeeAudioVoice, BEE_AUDIO_DEFAULTS, BEE_BUS, spatialMix } from './src/audio/BeeAudioMixer.js';
 
 // ==========================================
 // 2. INPUT & TOUCH CONTROLS (src/input/)
@@ -96,6 +97,7 @@ export class BeeEngine {
         this.time = new BeeTime();
         this.timers = new BeeTimerClock();
         this.tweens = new BeeTweenClock();
+        this.audio = new BeeAudioMixer({ engine: this });
         this.save = new BeeSaveStore();
         this.debug = new BeeLadybug(this);
         this.debug.attach();
@@ -109,7 +111,16 @@ export class BeeEngine {
 
         this._startAudioHandler = null;
         this._resizeHandler = null;
+        this._audioUnlock = null;
         this.touchControls = null;
+        this.#bindAudioUnlock();
+    }
+
+    #bindAudioUnlock() {
+        const unlock = () => this.audio && this.audio.unlock();
+        this._audioUnlock = unlock;
+        this.canvas.addEventListener('pointerdown', unlock);
+        window.addEventListener('keydown', unlock);
     }
 
     enableTouchControls() {
@@ -293,9 +304,16 @@ export class BeeEngine {
             window.removeEventListener('resize', this._resizeHandler);
         }
 
+        if (this._audioUnlock) {
+            this.canvas.removeEventListener('pointerdown', this._audioUnlock);
+            window.removeEventListener('keydown', this._audioUnlock);
+            this._audioUnlock = null;
+        }
+
         if (this.debug && typeof this.debug.destroy === 'function') {
             this.debug.destroy();
         }
+        if (this.audio) this.audio.destroy();
         if (this.timers) this.timers.clear();
         if (this.tweens) this.tweens.clear();
         if (this.physics) this.physics.clear();
@@ -356,6 +374,7 @@ export class BeeEngine {
         this.time.tick(timestamp);
         this.timers.tick(this.time);
         this.tweens.tick(this.time);
+        this.audio.update(this.time);
         const dt = this.time.dt;
 
         if (!this.time.paused) {
@@ -549,25 +568,14 @@ export class BeeEngine {
         return this.assets.getImage(name) || this.assets.getSound(name);
     }
 
-    playSound(audioAsset) {
-        if (!audioAsset) return;
-        const soundClone = audioAsset.cloneNode();
-        soundClone.play().catch((err) => console.warn("Audio blocked:", err));
+    playSound(source, options) {
+        const opts = typeof options === 'number' ? { volume: options } : (options || {});
+        return this.audio.play(source, { bus: BEE_BUS.SFX, ...opts });
     }
 
-    playMusic(audioAsset, volume = 0.5) {
-        if (!audioAsset) return;
-        audioAsset.loop = true;
-        audioAsset.volume = volume;
-        audioAsset.play().catch(() => {
-            this._startAudioHandler = () => {
-                audioAsset.play();
-                window.removeEventListener('click', this._startAudioHandler);
-                window.removeEventListener('keydown', this._startAudioHandler);
-            };
-            window.addEventListener('click', this._startAudioHandler);
-            window.addEventListener('keydown', this._startAudioHandler);
-        });
+    playMusic(source, volume = 0.5) {
+        const opts = typeof volume === 'number' ? { volume } : (volume || {});
+        return this.audio.music(source, opts);
     }
 }
 
@@ -588,6 +596,8 @@ export {
     BEE_SPATIAL_HASH_DEFAULTS,
     BEE_POOL_DEFAULTS,
     BEE_ANIMATOR_DEFAULTS,
+    BEE_AUDIO_DEFAULTS,
+    BEE_BUS,
     BeeTime,
     BeeTransform,
     BeeLadybug,
@@ -628,6 +638,10 @@ export {
     BeeSpriteSheet,
     BeeAnimatedSprite,
     BeeAnimator,
+    BeeAudioMixer,
+    BeeAudioBus,
+    BeeAudioVoice,
+    spatialMix,
     BeeTilemapLoader,
     BeeJoystick,
     BeeTouchButton,

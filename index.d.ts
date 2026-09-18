@@ -1525,6 +1525,105 @@ export declare class BeeLadybug {
   poll(): void;
 }
 
+export type BeeBusName = "master" | "music" | "sfx" | "ui" | "voice" | string;
+
+export declare const BEE_BUS: Readonly<{
+  MASTER: "master";
+  MUSIC: "music";
+  SFX: "sfx";
+  UI: "ui";
+  VOICE: "voice";
+}>;
+
+export declare const BEE_AUDIO_DEFAULTS: Readonly<{
+  maxDistance: number;
+  panWidth: number;
+  duckAmount: number;
+  duckAttack: number;
+  duckRelease: number;
+}>;
+
+export declare function spatialMix(
+  x: number,
+  y: number,
+  listenerX: number,
+  listenerY: number,
+  options?: { maxDistance?: number; panWidth?: number }
+): { volume: number; pan: number; dist: number };
+
+export declare class BeeAudioBus {
+  name: string;
+  parent: string | null;
+  volume: number;
+  mute: boolean;
+  duck: number;
+  constructor(name: string, options?: { parent?: string | null; volume?: number; mute?: boolean });
+}
+
+export declare class BeeAudioVoice {
+  id: number;
+  bus: string;
+  volume: number;
+  loop: boolean;
+  spatial: boolean;
+  x: number;
+  y: number;
+  stopped: boolean;
+  stop(fade?: number): this;
+}
+
+export interface BeeAudioPlayOptions {
+  bus?: BeeBusName;
+  volume?: number;
+  loop?: boolean;
+  fade?: number;
+  fadeIn?: number;
+  x?: number;
+  y?: number;
+  pan?: number;
+  spatial?: boolean;
+  duration?: number;
+  frequency?: number;
+  type?: OscillatorType;
+  slot?: string;
+}
+
+export declare class BeeAudioMixer {
+  engine: BeeEngine | null;
+  maxDistance: number;
+  panWidth: number;
+  listenerX: number;
+  listenerY: number;
+  context: AudioContext | null;
+  unlocked: boolean;
+  readonly master: BeeAudioBus | undefined;
+  readonly voices: number;
+  readonly available: boolean;
+
+  constructor(options?: {
+    engine?: BeeEngine | null;
+    maxDistance?: number;
+    panWidth?: number;
+    listenerX?: number;
+    listenerY?: number;
+  });
+
+  bus(name: BeeBusName, options?: { parent?: string | null; volume?: number; mute?: boolean }): BeeAudioBus;
+  setVolume(name: BeeBusName, volume: number): this;
+  mute(name: BeeBusName, muted?: boolean): this;
+  duck(options?: { bus?: BeeBusName; from?: BeeBusName; amount?: number; attack?: number; release?: number }): this;
+  listen(x: number, y: number): this;
+  unlock(): this;
+  play(source: string | HTMLAudioElement | AudioBuffer | { kind: "tone"; frequency?: number; type?: OscillatorType; duration?: number }, options?: BeeAudioPlayOptions): BeeAudioVoice | null;
+  music(source: string | HTMLAudioElement | AudioBuffer | { kind: "tone"; frequency?: number; type?: OscillatorType; duration?: number }, options?: BeeAudioPlayOptions): BeeAudioVoice | null;
+  tone(options?: BeeAudioPlayOptions): BeeAudioVoice | null;
+  stop(target?: BeeAudioVoice | BeeBusName | "music" | null, fade?: number): this;
+  fade(name: BeeBusName, volume: number, duration?: number): this;
+  outputVolume(name: BeeBusName): number;
+  update(time?: BeeTime | { unscaledDt?: number; delta?: (unscaled?: boolean) => number }): this;
+  destroy(): this;
+}
+
 export declare class BeeEngine {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
@@ -1540,6 +1639,7 @@ export declare class BeeEngine {
   time: BeeTime;
   timers: BeeTimerClock;
   tweens: BeeTweenClock;
+  audio: BeeAudioMixer;
   save: BeeSaveStore;
   debug: BeeLadybug;
   lastTime: number;
@@ -1629,6 +1729,12 @@ export declare class BeeEngine {
   loadAsset(type: string, name: string, src: string): Promise<any>;
   loadManifest(manifest: BeeManifestItem[]): Promise<void>;
   getAsset(name: string): any;
-  playSound(audioAsset: HTMLAudioElement): void;
-  playMusic(audioAsset: HTMLAudioElement, volume?: number): void;
+  playSound(
+    source: string | HTMLAudioElement | AudioBuffer,
+    options?: number | BeeAudioPlayOptions
+  ): BeeAudioVoice | null;
+  playMusic(
+    source: string | HTMLAudioElement | AudioBuffer,
+    volume?: number | BeeAudioPlayOptions
+  ): BeeAudioVoice | null;
 }

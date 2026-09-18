@@ -10,7 +10,7 @@ La versione 2.7 rifà **BeeTimer**: `start` / `pause` / `resume` / `cancel`, `gi
 BeeEngine-V2.7/
 ├── index.html                  # Punto di ingresso HTML e configurazione Canvas
 ├── index.js                    # Barrel ESM (re-export di BeeEngine.js)
-├── main.js                     # Demo visiva (BeeTween + BeeTimeline)
+├── main.js                     # Demo visiva (BeeAudioMixer: bus, duck, pan 2D)
 ├── BeeEngine.js                # Il CUORE del motore (Core Loop & System Coordinator)
 ├── README.md                   # Documentazione ufficiale e specifiche tecniche
 ├── package.json                # Manifest di configurazione per la pubblicazione NPM
@@ -20,6 +20,7 @@ BeeEngine-V2.7/
 │   ├── audio/                  # Effetti sonori (.mp3) e musiche di sottofondo
 │   └── images/                 # Texture dei personaggi (.png), sprite e sfondi
 └── src/
+    ├── audio/                  # BeeAudioMixer: bus, fade, duck, pan 2D
     ├── core/                   # BeeTween, BeeTimeline, BeePool, BeeTransform, BeeTime, BeeEntity, BeeTimer, scene, asset, save, grid
     ├── gameplay/               # Player, enemy, platform, collectible, menu
     ├── graphics/               # BeeAnimator, camera, sprite, tilemap, text, particles
@@ -126,7 +127,29 @@ actor.animator = animator;
 | `when('*', to, pred)` | da qualsiasi stato |
 | `play(name, { force })` | richiesta manuale; `force` rompe il lock |
 
-`BeeAnimatedSprite.play(name, { restart: true })` e `sprite.finished` esistono perché l'animator deve sapere quando l'attacco è chiuso. Versione pacchetto resta **2.7.0**: Animator, Tween e Timeline escono insieme nel 2.8.
+`BeeAnimatedSprite.play(name, { restart: true })` e `sprite.finished` esistono perché l'animator deve sapere quando l'attacco è chiuso. Versione pacchetto resta **2.7.0**: Animator, Tween, Timeline e Mixer escono insieme nel 2.8.
+
+## 🔊 BeeAudioMixer — bus, non cloneNode
+
+`playSound` / `playMusic` erano one-shot e un loop. `gioco.audio` è il grafo: **master / music / sfx / ui / voice**, volume e mute per canale, fade, ducking della musica quando parla `voice`, pan 2D rispetto al listener (centro camera o canvas). Il mixer ticka ogni frame sul tempo reale.
+
+```javascript
+gioco.audio.unlock();                    // gesto utente
+gioco.audio.music(track, { fade: 0.6, volume: 0.5 });
+gioco.audio.play('hit', { bus: 'sfx', x: 120, y: 300 });
+gioco.audio.tone({ frequency: 180, duration: 1.1, bus: 'voice' }); // duck
+gioco.audio.setVolume('sfx', 0.8);
+gioco.audio.fade('music', 0.2, 0.4);
+```
+
+| Contratto | Significato |
+| --- | --- |
+| `bus` | catena verso master; mute sul padre zittisce i figli |
+| `duck` | default: `voice` abbassa `music` (amount 0.35) |
+| `x, y` | attenuazione + pan vs listener |
+| `tone()` | beep procedurale (demo senza mp3) |
+
+`playSound` / `playMusic` restano, ma passano dal mixer.
 
 ## 🎞 BeeTween + BeeTimeline — interpolare proprietà, non un cooldown
 
