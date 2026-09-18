@@ -169,13 +169,19 @@ const cut = gioco.timeline()
     .start();
 ```
 
+`.to(a, { duration: 1 }).to(b, { duration: 1, at: 5 }).to(c, { duration: 1 })` — `c` parte a **t = 2** (coda fluent di `a`+`b`), non a t = 6. `at` piazza solo quell'item.
+
 | API | Contratto |
 | --- | --- |
 | `gioco.to` / `from` / `fromTo` | un tween, overwrite sulle stesse chiavi |
 | `ease` | nome (`quadOut`, `backOut`, `bounceOut`…) o funzione `t => t` |
-| `yoyo` + `repeat` | andata/ritorno; `repeat: Infinity` resta sul clock |
-| `timeline().to(..., { at: 0 })` | parallelo all'inizio |
+| `yoyo` + `repeat` | andata/ritorno; ogni ciclo senza yoyo riparte dallo snapshot iniziale (non dalla posa finale). `repeat: Infinity` = loop |
+| `timeline().to(..., { at })` | `at` è tempo assoluto di quell'item; il cursore di coda per il prossimo `.to()` senza `at` resta in serie |
+| `timeline().call(fn, at)` / `set(target, props, at)` | marker a durata 0: allungano `duration` almeno fino ad `at` (anche su timeline vuota) |
 | `gioco.tweens.kill(target)` | spegne i tween su quell'oggetto |
+
+Limiti accettati (non sono bug): `onComplete` del tween figlio **non** scatta durante `seek()` — usa `call()` o `timeline.onComplete`. Il residuo di `dt` oltre la fine del ciclo non viene recuperato (nessun catch-up).
+
 
 ## 🎬 BeeSceneManager — replace, non stack
 

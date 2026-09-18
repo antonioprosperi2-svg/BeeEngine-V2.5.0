@@ -171,6 +171,7 @@ export class BeeTween {
         this.loop = this.repeat === Infinity;
         this.#wait = this.delay;
         this.#started = false;
+        this.#captured = false;
         this.#backward = false;
         this.#cycles = 0;
         this.#keys = [];
@@ -187,6 +188,7 @@ export class BeeTween {
     #mode;
     #wait;
     #started;
+    #captured;
     #backward;
     #cycles;
     #keys;
@@ -344,7 +346,10 @@ export class BeeTween {
 
     #begin() {
         this.#started = true;
-        this.#capture();
+        if (!this.#captured) {
+            this.#capture();
+            this.#captured = true;
+        }
         if (this.overwrite && this.clock && typeof this.clock.overwrite === 'function') {
             this.clock.overwrite(this);
         }
@@ -409,6 +414,7 @@ export class BeeTween {
         if (this.#cycles < total) {
             this.elapsed = 0;
             if (this.yoyo) this.#backward = !this.#backward;
+            else this.#apply(0);
             return;
         }
         this.finished = true;

@@ -1136,6 +1136,7 @@ export declare class BeeTimeline {
   resume(): this;
   cancel(): this;
   steal(target: object, keys: string[]): this;
+  seek(seconds: number): this;
   killTarget(target: object): this;
   update(dtOrTime: number | BeeTime | { dt?: number; unscaledDt?: number }): this;
 }

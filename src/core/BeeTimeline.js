@@ -7,7 +7,9 @@ function asOptions(durationOrOptions) {
 
 /**
  * BeeTimeline — sequenze e paralleli di tween/call/wait.
- * Il cursor avanza in serie; `at` piazza un item in un tempo assoluto.
+ * Il cursor di coda avanza in serie; `at` piazza solo l'item corrente
+ * senza spostare quel cursor. call/set a durata 0 allungano `duration`
+ * almeno fino al loro `at`.
  */
 export class BeeTimeline {
     constructor(options = {}) {
@@ -59,6 +61,8 @@ export class BeeTimeline {
             duration: opt.duration ?? BEE_TWEEN_DEFAULTS.duration,
             ease: resolveEase(opt.ease ?? BEE_TWEEN_DEFAULTS.ease),
             unscaled: this.unscaled,
+            yoyo: opt.yoyo === true,
+            repeat: opt.repeat === Infinity ? Infinity : Math.max(0, Number(opt.repeat) || 0),
             autoStart: false,
             overwrite: false
         }), opt.at);
@@ -73,6 +77,8 @@ export class BeeTimeline {
             duration: opt.duration ?? BEE_TWEEN_DEFAULTS.duration,
             ease: resolveEase(opt.ease ?? BEE_TWEEN_DEFAULTS.ease),
             unscaled: this.unscaled,
+            yoyo: opt.yoyo === true,
+            repeat: opt.repeat === Infinity ? Infinity : Math.max(0, Number(opt.repeat) || 0),
             autoStart: false,
             overwrite: false
         }), opt.at);
@@ -88,6 +94,8 @@ export class BeeTimeline {
             duration: opt.duration ?? BEE_TWEEN_DEFAULTS.duration,
             ease: resolveEase(opt.ease ?? BEE_TWEEN_DEFAULTS.ease),
             unscaled: this.unscaled,
+            yoyo: opt.yoyo === true,
+            repeat: opt.repeat === Infinity ? Infinity : Math.max(0, Number(opt.repeat) || 0),
             autoStart: false,
             overwrite: false
         }), opt.at);
@@ -103,12 +111,14 @@ export class BeeTimeline {
         if (typeof fn !== 'function') return this;
         const start = this.#at(at);
         this.#items.push({ start, duration: 0, call: fn, fired: false, armed: false });
+        this.#cover(start);
         return this;
     }
 
     set(target, props, at) {
         const start = this.#at(at);
         this.#items.push({ start, duration: 0, target, props: { ...props }, fired: false, armed: false });
+        this.#cover(start);
         return this;
     }
 
@@ -163,6 +173,20 @@ export class BeeTimeline {
         return this;
     }
 
+    seek(seconds) {
+        const t = Math.max(0, Number(seconds) || 0);
+        if (this.cancelled) return this;
+        if (this.duration <= 0) {
+            this.elapsed = 0;
+            this.#applyTime(0, true);
+            return this;
+        }
+        this.elapsed = Math.min(t, this.duration);
+        const time = this.#backward ? this.duration - this.elapsed : this.elapsed;
+        this.#applyTime(time, true);
+        return this;
+    }
+
     killTarget(target) {
         for (let i = 0; i < this.#items.length; i++) {
             const item = this.#items[i];
@@ -198,17 +222,23 @@ export class BeeTimeline {
     }
 
     #push(tween, at) {
+        const duration = Math.max(0, Number(tween.duration) || 0);
+        const sequentialStart = this.#cursor;
         const start = this.#at(at);
-        const duration = tween.duration;
         this.#items.push({ start, duration, tween, armed: false, fired: false });
-        this.#cursor = start + duration;
-        if (this.#cursor > this.duration) this.duration = this.#cursor;
+        this.#cursor = sequentialStart + duration;
+        this.#cover(Math.max(this.#cursor, start + duration));
         return this;
     }
 
     #at(at) {
         if (typeof at === 'number' && Number.isFinite(at)) return Math.max(0, at);
         return this.#cursor;
+    }
+
+    #cover(time) {
+        const end = Math.max(0, Number(time) || 0);
+        if (end > this.duration) this.duration = end;
     }
 
     #stealSiblings(source) {
@@ -272,6 +302,7 @@ export class BeeTimeline {
             this.elapsed = 0;
             this.#rewind();
             if (this.yoyo) this.#backward = !this.#backward;
+            this.#applyTime(this.#backward ? this.duration : 0, !this.#backward);
             return;
         }
         this.finished = true;
