@@ -1,4 +1,5 @@
 import { BeeEntity } from '../core/BeeEntity.js';
+import { BEE_DRAW } from './BeeLayer.js';
 
 /**
  * BeeText: Renders single text elements and provides a customizable HUD layout.
@@ -12,6 +13,7 @@ export class BeeText extends BeeEntity {
         this.color = color;
         this.align = align;
         this.baseline = "top";
+        this.drawLayer = BEE_DRAW.UI;
     }
 
     draw(ctx) {

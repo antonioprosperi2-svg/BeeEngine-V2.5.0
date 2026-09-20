@@ -61,10 +61,15 @@ const mainScene = {
         game.collisions.run();
     },
 
-    draw(ctx) {
+    drawWorld(ctx, engine) {
+        const cam = engine && engine.camera;
+        const x = cam ? cam.x : 0;
+        const y = cam ? cam.y : 0;
         ctx.fillStyle = '#1a1a2e';
-        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.fillRect(x, y, ctx.canvas.width, ctx.canvas.height);
+    },
 
+    draw(ctx) {
         BeeText.drawHUD(ctx, this.player?.score || 0, this.player?.lives || 3, 'BEE ENGINE 2D DEMO');
         ctx.fillStyle = '#ffd700';
         ctx.font = '14px monospace';

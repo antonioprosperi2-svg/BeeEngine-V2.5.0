@@ -1,131 +1,163 @@
-import { BeeEngine, BEE_BUS } from './BeeEngine.js';
+import {
+    BeeEngine,
+    BeeEntity,
+    BeeCamera,
+    BeeStack,
+    BeeLabel,
+    BeeUIButton,
+    BEE_ANCHOR,
+    BEE_DRAW
+} from './BeeEngine.js';
 
 const gioco = new BeeEngine('testCanvas', 800, 600);
 gioco.enableAutoResize(800, 600, 100);
+gioco.camera = new BeeCamera(800, 600);
+gioco.camera.setBounds(0, 0, 1600, 900);
 window.gioco = gioco;
 
-let musicOn = false;
-let lastPan = 0;
-let lastVol = 1;
-let ducks = 0;
-
-function startMusic() {
-    gioco.audio.unlock();
-    if (musicOn && gioco.audio.voices > 0) return;
-    musicOn = true;
-    gioco.audio.tone({
-        frequency: 196,
-        duration: 8,
-        type: 'sine',
-        bus: BEE_BUS.MUSIC,
-        volume: 0.18,
-        loop: false
-    });
-    gioco.audio.tone({
-        frequency: 247,
-        duration: 8,
-        type: 'sine',
-        bus: BEE_BUS.MUSIC,
-        volume: 0.12
-    });
-    gioco.every(7.5, () => {
-        if (!musicOn) return;
-        gioco.audio.tone({ frequency: 196, duration: 8, type: 'sine', bus: BEE_BUS.MUSIC, volume: 0.18 });
-        gioco.audio.tone({ frequency: 247, duration: 8, type: 'sine', bus: BEE_BUS.MUSIC, volume: 0.12 });
-    }, { unscaled: true });
+function makeSliceSkin() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 24;
+    canvas.height = 24;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#f5d76e';
+    ctx.fillRect(0, 0, 24, 24);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(4, 4, 16, 16);
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(6, 6, 12, 12);
+    return canvas;
 }
 
-function blip(x, y) {
-    gioco.audio.unlock();
-    const mix = gioco.audio;
-    mix.listen(400, 300);
-    const voice = mix.tone({
-        frequency: 520 + (x / 800) * 280,
-        duration: 0.16,
-        type: 'square',
-        bus: BEE_BUS.SFX,
-        volume: 0.22,
-        x,
-        y
-    });
-    const spatial = {
-        volume: Math.max(0, 1 - Math.hypot(x - 400, y - 300) / mix.maxDistance),
-        pan: Math.max(-1, Math.min(1, (x - 400) / mix.panWidth))
-    };
-    lastPan = spatial.pan;
-    lastVol = spatial.volume;
-    return voice;
-}
+class Mover extends BeeEntity {
+    constructor(x, y, color) {
+        super(x, y, 36, 36);
+        this.color = color;
+        this.speed = 70;
+        this.drawLayer = BEE_DRAW.YSORT;
+        this.originX = x;
+    }
 
-function talk() {
-    gioco.audio.unlock();
-    ducks += 1;
-    gioco.audio.tone({
-        frequency: 170,
-        duration: 1.15,
-        type: 'triangle',
-        bus: BEE_BUS.VOICE,
-        volume: 0.35
-    });
-}
-
-const scene = {
-    entities: [],
+    update(dt) {
+        this.x += this.speed * dt;
+        if (this.x > this.originX + 240) this.speed = -Math.abs(this.speed);
+        if (this.x < this.originX - 20) this.speed = Math.abs(this.speed);
+    }
 
     draw(ctx) {
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.worldX, this.worldY, this.width, this.height);
+    }
+}
+
+const hero = new Mover(260, 380, '#f0a202');
+let score = 0;
+const hudScore = new BeeLabel({
+    text: 'SCORE 000000',
+    anchor: BEE_ANCHOR.TOP_LEFT,
+    x: 16,
+    y: 16,
+    width: 220,
+    height: 28,
+    color: '#ffe08a',
+    font: 'bold 16px monospace'
+});
+const hudHint = new BeeLabel({
+    text: 'P menu   Tab focus',
+    anchor: BEE_ANCHOR.TOP_RIGHT,
+    x: 16,
+    y: 16,
+    width: 220,
+    height: 28,
+    align: 'right',
+    color: '#cbd5e1',
+    font: '13px monospace'
+});
+const dock = new BeeLabel({
+    text: 'HUD in spazio schermo — la camera scorre, questo no',
+    anchor: BEE_ANCHOR.BOTTOM,
+    y: 8,
+    height: 28,
+    margin: 16,
+    color: '#94a3b8',
+    font: '13px monospace'
+});
+
+const menu = new BeeStack({
+    name: 'pause',
+    anchor: BEE_ANCHOR.CENTER,
+    padding: 18,
+    gap: 10,
+    image: makeSliceSkin(),
+    slice: { left: 8, top: 8, right: 8, bottom: 8 }
+});
+menu.visible = false;
+menu.add(new BeeLabel({
+    text: 'PAUSA',
+    width: 240,
+    height: 28,
+    align: 'center',
+    color: '#ffe08a',
+    font: 'bold 20px monospace'
+}));
+menu.add(new BeeUIButton({
+    text: 'Riprendi',
+    onClick: () => {
+        menu.visible = false;
+        gioco.resume();
+        gioco.ui.markDirty();
+    }
+}));
+menu.add(new BeeUIButton({
+    text: 'Lento 0.25x',
+    onClick: () => gioco.setTimeScale(0.25)
+}));
+menu.add(new BeeUIButton({
+    text: 'Normale 1x',
+    onClick: () => gioco.setTimeScale(1)
+}));
+
+gioco.ui.add(hudScore);
+gioco.ui.add(hudHint);
+gioco.ui.add(dock);
+gioco.ui.add(menu);
+
+const scene = {
+    entities: [
+        new Mover(120, 520, '#7dd3fc'),
+        hero,
+        new Mover(480, 300, '#fb7185')
+    ],
+
+    update() {
+        score += 1;
+        hudScore.text = 'SCORE ' + String(score).padStart(6, '0');
+        gioco.camera.follow(hero, 0.08);
+    },
+
+    drawWorld(ctx, engine) {
+        const cam = engine.camera;
         ctx.fillStyle = '#0d1020';
-        ctx.fillRect(0, 0, 800, 600);
-
-        ctx.fillStyle = '#1a1f33';
-        ctx.beginPath();
-        ctx.arc(400, 300, 18, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#ffe08a';
-        ctx.font = '12px monospace';
-        ctx.fillText('listener', 372, 268);
-
-        const buses = ['master', 'music', 'sfx', 'voice'];
-        for (let i = 0; i < buses.length; i++) {
-            const name = buses[i];
-            const v = gioco.audio.outputVolume(name);
-            const y = 430 + i * 32;
-            ctx.fillStyle = '#1a1f33';
-            ctx.fillRect(80, y, 640, 18);
-            ctx.fillStyle = name === 'voice' ? '#ef4444' : name === 'music' ? '#4a90e2' : '#f0a202';
-            ctx.fillRect(80, y, 640 * v, 18);
-            ctx.fillStyle = '#e2e8f0';
-            ctx.font = '13px monospace';
-            ctx.fillText(`${name}  ${v.toFixed(2)}`, 80, y - 4);
-        }
-
-        ctx.fillStyle = '#ffe08a';
-        ctx.font = 'bold 20px monospace';
-        ctx.fillText('BeeAudioMixer — bus, duck, pan 2D', 24, 36);
-        ctx.font = '14px monospace';
-        ctx.fillStyle = '#c8c8c8';
-        ctx.fillText(
-            `voices ${gioco.audio.voices}   pan ${lastPan.toFixed(2)}   dist vol ${lastVol.toFixed(2)}   dialoghi ${ducks}`,
-            24,
-            58
-        );
-        ctx.fillText('Click = SFX spaziale. V = voce (duck musica). 🔊 o M = drone. F2 Ladybug.', 24, 80);
+        ctx.fillRect(cam.x, cam.y, cam.w, cam.h);
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(0, 600, 1600, 300);
     }
 };
 
-gioco.scenes.add('audio', scene);
-gioco.scenes.change('audio');
-gioco.enableLadybug();
+gioco.scenes.add('ui', scene);
+gioco.scenes.change('ui');
 gioco.start();
 
-gioco.canvas.addEventListener('pointerdown', (event) => {
-    const pos = gioco.input.getCanvasPosition(event.clientX, event.clientY);
-    startMusic();
-    blip(pos.x, pos.y);
-});
-
 window.addEventListener('keydown', (event) => {
-    if (event.code === 'KeyV') talk();
-    if (event.code === 'KeyM') startMusic();
+    if (event.code !== 'KeyP') return;
+    menu.visible = !menu.visible;
+    gioco.ui.markDirty();
+    if (menu.visible) {
+        gioco.pause();
+        gioco.ui.focusAt(0);
+    } else {
+        gioco.resume();
+    }
 });
 
 function bindControls() {
@@ -137,13 +169,22 @@ function bindControls() {
     const ladybugBtn = document.getElementById('btnLadybug');
     const audioBtn = document.getElementById('btnAudio');
 
-    if (pauseBtn) pauseBtn.addEventListener('click', () => gioco.pause());
-    if (resumeBtn) resumeBtn.addEventListener('click', () => gioco.resume());
+    if (pauseBtn) pauseBtn.addEventListener('click', () => {
+        menu.visible = true;
+        gioco.ui.markDirty();
+        gioco.pause();
+        gioco.ui.focusAt(0);
+    });
+    if (resumeBtn) resumeBtn.addEventListener('click', () => {
+        menu.visible = false;
+        gioco.ui.markDirty();
+        gioco.resume();
+    });
     if (slowBtn) slowBtn.addEventListener('click', () => gioco.debug.applySlowMo());
     if (normalBtn) normalBtn.addEventListener('click', () => gioco.debug.restoreRealtime());
     if (fastBtn) fastBtn.addEventListener('click', () => gioco.setTimeScale(2));
     if (ladybugBtn) ladybugBtn.addEventListener('click', () => gioco.debug.toggle());
-    if (audioBtn) audioBtn.addEventListener('click', () => startMusic());
+    if (audioBtn) audioBtn.addEventListener('click', () => gioco.audio && gioco.audio.unlock());
 }
 
 bindControls();

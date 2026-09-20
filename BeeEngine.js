@@ -12,6 +12,19 @@ import { BeeTween, BeeTweenClock, BeeEase, BEE_TWEEN_DEFAULTS } from './src/core
 import { BeeTimeline } from './src/core/BeeTimeline.js';
 import { BeeGrid } from './src/core/BeeGrid.js';
 import { BeePool, BEE_POOL_DEFAULTS } from './src/core/BeePool.js';
+import { BeePrefab, BEE_PREFAB_DEFAULTS } from './src/core/BeePrefab.js';
+import { BeePathfinder, BeePath, BEE_PATH_DEFAULTS } from './src/core/BeePathfinder.js';
+import {
+    BeeUI,
+    BeeControl,
+    BeePanel,
+    BeeStack,
+    BeeLabel,
+    BeeUIButton,
+    BEE_ANCHOR,
+    BEE_UI_DEFAULTS,
+    drawNineSlice
+} from './src/ui/BeeUI.js';
 import { BeeLadybug, BEE_LADYBUG_DEFAULTS } from './src/debug/BeeLadybug.js';
 import { BeeAudioMixer, BeeAudioBus, BeeAudioVoice, BEE_AUDIO_DEFAULTS, BEE_BUS, spatialMix } from './src/audio/BeeAudioMixer.js';
 
@@ -32,6 +45,7 @@ import { BeeSprite } from './src/graphics/BeeSprite.js';
 import { BeeSpriteSheet } from './src/graphics/BeeSpriteSheet.js';
 import { BeeAnimatedSprite } from './src/graphics/BeeAnimatedSprite.js';
 import { BeeAnimator, BEE_ANIMATOR_DEFAULTS } from './src/graphics/BeeAnimator.js';
+import { BeeLayer, BEE_DRAW, BEE_SPACE, BEE_LAYER_DEFAULTS } from './src/graphics/BeeLayer.js';
 import { BeeCamera } from './src/graphics/BeeCamera.js';
 import { BeeParticleSystem } from './src/graphics/BeeParticleSystem.js';
 import { BeeTilemap } from './src/graphics/BeeTilemap.js';
@@ -98,6 +112,11 @@ export class BeeEngine {
         this.timers = new BeeTimerClock();
         this.tweens = new BeeTweenClock();
         this.audio = new BeeAudioMixer({ engine: this });
+        this.layers = new BeeLayer();
+        this.prefabs = new BeePrefab({ engine: this });
+        this.#installPrefabTypes();
+        this.pathfinder = new BeePathfinder();
+        this.ui = new BeeUI({ canvas: this.canvas, width, height });
         this.save = new BeeSaveStore();
         this.debug = new BeeLadybug(this);
         this.debug.attach();
@@ -114,6 +133,30 @@ export class BeeEngine {
         this._audioUnlock = null;
         this.touchControls = null;
         this.#bindAudioUnlock();
+    }
+
+    #installPrefabTypes() {
+        this.prefabs
+            .type('entity', BeeEntity)
+            .type('enemy', BeeEnemy)
+            .type('player', BeePlayer)
+            .type('shooter', BeeEnemyShooter)
+            .type('platform', BeePlatform)
+            .type('collectible', (spec) => new BeeCollectible(
+                spec.canvasWidth ?? this.canvas.width,
+                spec.canvasHeight ?? this.canvas.height,
+                spec.textureKey ?? spec.sprite ?? null,
+                spec.width ?? 20,
+                spec.height ?? 20
+            ))
+            .type('text', (spec) => new BeeText(
+                spec.text ?? '',
+                spec.x ?? 0,
+                spec.y ?? 0,
+                spec.font,
+                spec.color,
+                spec.align
+            ));
     }
 
     #bindAudioUnlock() {
@@ -177,6 +220,12 @@ export class BeeEngine {
 
         window.addEventListener('resize', this._resizeHandler);
         this._resizeHandler();
+    }
+
+    setGrid(grid) {
+        this.grid = grid || null;
+        if (grid) this.pathfinder.useGrid(grid);
+        return this;
     }
 
     setScene(name, data = null) {
@@ -314,6 +363,7 @@ export class BeeEngine {
             this.debug.destroy();
         }
         if (this.audio) this.audio.destroy();
+        if (this.ui) this.ui.destroy();
         if (this.timers) this.timers.clear();
         if (this.tweens) this.tweens.clear();
         if (this.physics) this.physics.clear();
@@ -390,6 +440,8 @@ export class BeeEngine {
             this.update(dt, this.input, this.time);
         }
 
+        this.ui.update(this.input);
+
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.save();
 
@@ -397,11 +449,11 @@ export class BeeEngine {
             this.camera.apply(this.ctx);
         }
 
-        if (this.scenes) {
-            this.scenes.draw(this.ctx);
+        if (this.scenes && typeof this.scenes.drawWorld === 'function') {
+            this.scenes.drawWorld(this.ctx);
         }
 
-        this.renderEntities(this.ctx);
+        this.layers.drawWorld(this.ctx, this);
 
         if (this.render) {
             this.render(this.ctx);
@@ -412,6 +464,14 @@ export class BeeEngine {
         }
 
         this.ctx.restore();
+
+        this.layers.drawScreen(this.ctx, this);
+
+        if (this.scenes && typeof this.scenes.drawUI === 'function') {
+            this.scenes.drawUI(this.ctx);
+        }
+
+        this.ui.draw(this.ctx);
 
         if (this.touchControls) {
             this.touchControls.draw(this.ctx);
@@ -467,9 +527,7 @@ export class BeeEngine {
     }
 
     renderEntities(ctx) {
-        for (let i = 0; i < this.entities.length; i++) {
-            this.drawEntity(ctx, this.entities[i]);
-        }
+        this.layers.drawWorld(ctx, this);
     }
 
     getEntityDrawBounds(entity) {
@@ -493,8 +551,17 @@ export class BeeEngine {
         };
     }
 
-    isRectVisibleInView(x, y, width, height) {
+    isRectVisibleInView(x, y, width, height, space = BEE_SPACE.WORLD) {
         if (width <= 0 || height <= 0) return false;
+
+        if (space === BEE_SPACE.SCREEN) {
+            return (
+                x < this.canvas.width &&
+                x + width > 0 &&
+                y < this.canvas.height &&
+                y + height > 0
+            );
+        }
 
         if (this.camera && typeof this.camera.isRectVisible === 'function') {
             return this.camera.isRectVisible(x, y, width, height);
@@ -511,8 +578,11 @@ export class BeeEngine {
         );
     }
 
-    drawEntity(ctx, entity) {
+    drawEntity(ctx, entity, options = null) {
         if (!entity || entity.visible === false || entity.destroyed) return;
+
+        const space = options && options.space === BEE_SPACE.SCREEN ? BEE_SPACE.SCREEN : BEE_SPACE.WORLD;
+        const pass = (options && options.pass) || entity.drawLayer || BEE_DRAW.WORLD;
 
         const alpha = typeof entity.alpha === 'number' ? entity.alpha : 1;
         const fade = alpha < 1;
@@ -523,8 +593,8 @@ export class BeeEngine {
 
         if (typeof entity.draw === 'function') {
             const bounds = this.getEntityDrawBounds(entity);
-            const hasSize = bounds.width > 0 && bounds.height > 0;
-            if (!hasSize || this.isRectVisibleInView(bounds.x, bounds.y, bounds.width, bounds.height)) {
+            const hasSize = bounds && bounds.width > 0 && bounds.height > 0;
+            if (!hasSize || this.isRectVisibleInView(bounds.x, bounds.y, bounds.width, bounds.height, space)) {
                 entity.draw(ctx, this);
             }
         }
@@ -532,7 +602,9 @@ export class BeeEngine {
         const children = entity.children;
         if (children && children.length > 0) {
             for (let i = 0; i < children.length; i++) {
-                this.drawEntity(ctx, children[i]);
+                const child = children[i];
+                if (child && child.drawLayer && child.drawLayer !== pass) continue;
+                this.drawEntity(ctx, child, { space, pass });
             }
         }
 
@@ -595,7 +667,14 @@ export {
     BEE_LAYER,
     BEE_SPATIAL_HASH_DEFAULTS,
     BEE_POOL_DEFAULTS,
+    BEE_PREFAB_DEFAULTS,
+    BEE_PATH_DEFAULTS,
+    BEE_ANCHOR,
+    BEE_UI_DEFAULTS,
     BEE_ANIMATOR_DEFAULTS,
+    BEE_LAYER_DEFAULTS,
+    BEE_DRAW,
+    BEE_SPACE,
     BEE_AUDIO_DEFAULTS,
     BEE_BUS,
     BeeTime,
@@ -635,9 +714,20 @@ export {
     BeePhysicsWorld,
     BeeSpatialHash,
     BeePool,
+    BeePrefab,
+    BeePathfinder,
+    BeePath,
+    BeeUI,
+    BeeControl,
+    BeePanel,
+    BeeStack,
+    BeeLabel,
+    BeeUIButton,
+    drawNineSlice,
     BeeSpriteSheet,
     BeeAnimatedSprite,
     BeeAnimator,
+    BeeLayer,
     BeeAudioMixer,
     BeeAudioBus,
     BeeAudioVoice,

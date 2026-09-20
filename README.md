@@ -1,16 +1,16 @@
 ![BeeEngine](https://raw.githubusercontent.com/antonioprosperi2-svg/BeeEngine-V2.0/main/Gemini_Generated_Image_pz9goopz9goopz9g.jpg)
-# 🐝 Motore di gioco 2D BeeEngine (v2.7.0 Professional)
+# 🐝 Motore di gioco 2D BeeEngine (v2.8.0 Professional)
 
 BeeEngine è un motore di gioco 2D leggero, modulare e altamente ottimizzato scritto in puro JavaScript moderno (ES Modules) per HTML5 Canvas.
-La versione 2.7 rifà **BeeTimer**: `start` / `pause` / `resume` / `cancel`, `gioco.timers` ticka ogni frame. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
+La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
 
 ## 📁 Struttura del Progetto Aggiornata
 
 ```text
-BeeEngine-V2.7/
+BeeEngine-V2.8/
 ├── index.html                  # Punto di ingresso HTML e configurazione Canvas
 ├── index.js                    # Barrel ESM (re-export di BeeEngine.js)
-├── main.js                     # Demo visiva (BeeAudioMixer: bus, duck, pan 2D)
+├── main.js                     # Demo visiva (BeeUI: anchor, stack, focus, HUD)
 ├── BeeEngine.js                # Il CUORE del motore (Core Loop & System Coordinator)
 ├── README.md                   # Documentazione ufficiale e specifiche tecniche
 ├── package.json                # Manifest di configurazione per la pubblicazione NPM
@@ -21,10 +21,11 @@ BeeEngine-V2.7/
 │   └── images/                 # Texture dei personaggi (.png), sprite e sfondi
 └── src/
     ├── audio/                  # BeeAudioMixer: bus, fade, duck, pan 2D
-    ├── core/                   # BeeTween, BeeTimeline, BeePool, BeeTransform, BeeTime, BeeEntity, BeeTimer, scene, asset, save, grid
+    ├── core/                   # BeePathfinder, BeePrefab, BeeTween, BeeTimeline, BeePool, BeeTransform, BeeTime, BeeEntity, BeeTimer, scene, asset, save, grid
     ├── gameplay/               # Player, enemy, platform, collectible, menu
-    ├── graphics/               # BeeAnimator, camera, sprite, tilemap, text, particles
+    ├── graphics/               # BeeLayer, BeeAnimator, camera, sprite, tilemap, text, particles
     ├── input/                  # Tastiera, mouse, joystick, touch, button
+    ├── ui/                     # BeeUI: Control, panel, stack, label, button, nine-slice
     ├── physics/                # BeeSpatialHash, BeePhysicsWorld, BeeRigidBody, AABB groups
     └── debug/                  # BeeLadybug: overlay e hitbox
 ```
@@ -183,11 +184,155 @@ const cut = gioco.timeline()
 Limiti accettati (non sono bug): `onComplete` del tween figlio **non** scatta durante `seek()` — usa `call()` o `timeline.onComplete`. Il residuo di `dt` oltre la fine del ciclo non viene recuperato (nessun catch-up).
 
 
+## 🖼 BeeLayer — pipeline di disegno, non l'array di entity
+
+Oggi l'ordine non è più «come stanno nell'array». `gioco.layers` è la pipeline: **background → world → ysort** in spazio mondo (sotto la camera), poi **ui** in spazio schermo *dopo* `restore`. HUD e mondo non condividono lo stesso passaggio.
+
+`BEE_LAYER` (fisica) è un bitmask. `BeeLayer` / `BEE_DRAW` sono pass di render. Non mescolarli.
+
+```javascript
+entity.drawLayer = BEE_DRAW.YSORT;   // personaggi, alberi
+label.drawLayer = BEE_DRAW.UI;       // BeeText è già ui
+gioco.layers.add('fx', { space: 'world', sort: 'stable', order: 25 });
+```
+
+Y-sort usa i piedi (`y + height`) o `entity.sortY`. A parità di Y l'ordine di raccolta resta stabile (chi è stato raccolto prima resta sotto).
+
+| API | Contratto |
+| --- | --- |
+| `BEE_DRAW.BACKGROUND / WORLD / YSORT` | spazio mondo, camera applicata |
+| `BEE_DRAW.UI` | spazio schermo, dopo la camera. Culling sul canvas, non sul frustum |
+| `sort: 'stable'` | ordine di raccolta, nessun shuffle |
+| `sort: 'y'` | piedi, poi indice (stabile) |
+| `scene.drawWorld` | sfondo mondo, prima delle entity, sotto la camera |
+| `scene.draw` | solo HUD, dopo `restore` — non un secondo `for` sulle entity |
+| figlio con altro `drawLayer` | esce dal parent e va nel suo pass (UI figlia di un actor) |
+
+Limite: i figli *senza* `drawLayer` proprio si disegnano col parent (cappello sull'head), non vengono y-sorted da soli.
+
+## 🧱 BeePrefab — fabbrica da dati, non `new` sparso
+
+Livelli, wave e oggetti tilemap istanziamo **la stessa ricetta** con override (`x`, `y`, `hp`). `new BeeEnemy(...)` resta nella factory del tipo, non nel gioco.
+
+`gioco.prefabs` è già sull'engine. Tipi pronti: `entity`, `enemy`, `player`, `shooter`, `platform`, `collectible`, `text`. `gioco.spawn(name)` è il **pool**. `gioco.prefabs.spawn(name)` è la ricetta.
+
+```javascript
+gioco.prefabs.define('slime', {
+    type: 'enemy',
+    width: 32,
+    height: 32,
+    speed: 45,
+    hp: 3,
+    sprite: 'slime',
+    collider: true,
+    drawLayer: 'ysort',
+    patrol: { minX: 80, maxX: 400 }
+});
+
+gioco.prefabs.spawn('slime', { x: 220, y: 348 });
+gioco.prefabs.spawnMany('slime', [[100, 80], [180, 80], { x: 260, y: 80, hp: 1 }]);
+gioco.prefabs.fromList([{ prefab: 'slime', x: 10, y: 20 }, { prefab: 'drone', x: 40, y: 20 }]);
+gioco.prefabs.fromObjects(map.layers[2].objects); // Tiled: type/name/properties
+```
+
+`extend` eredita un'altra ricetta. `setup(entity, spec, engine)` è l'ultimo gancio. I campi custom stanno in `props`. Spawn **non** muta la ricetta.
+
+| API | Contratto |
+| --- | --- |
+| `type(name, Class\|fn)` | registra come si costruisce quel tipo |
+| `define(name, spec)` | ricetta; sovrascrive se lo stesso nome |
+| `spawn(name, override)` | istanza nuova; `addToScene` default true |
+| `spawnMany` / `fromList` | wave / livello da array |
+| `fromObjects` | oggetti Tiled; tipi senza ricetta si saltano (salvo `strict`) |
+| `collider: true` | `addRectCollider()` |
+| `children` | prefab annidati, non aggiunti di nuovo alla scena |
+
+`BeePool` è il riuso GC. `BeePrefab` è il template. Si possono combinare con `pool: 'enemy'` sulla ricetta (acquire + apply).
+
+## 🧭 BeePathfinder — A* e flow field, non chase in linea retta
+
+`gioco.pathfinder` cammina su `BeeGrid` / `BeeTilemap`. 0 è camminabile (o `walkable` custom). I solidi della tilemap usano `isSolidTile`. `setBlocked` aggiunge ostacoli runtime (porte, corpi) e invalida i path. `track` ricalcola solo se cambiano goal o versione.
+
+```javascript
+gioco.setGrid(new BeeGrid(25, 18, 32));
+const nav = gioco.pathfinder;
+nav.useTilemap(mappa);          // oppure useGrid / useCells
+
+const path = nav.find(hunter, target);
+nav.follow(hunter, path, dt, hunter.speed);
+nav.chase(hunter, target, dt);  // track + follow, path su hunter.path
+
+nav.flow(target);               // un goal, tanti agenti
+const dir = nav.sampleFlow(agent);
+```
+
+Diagonale octile, **niente taglio angolo** (`cornerCut: false`): non si passa tra due muri in diagonale. Fuori mappa = solido. Il goal su una cella bloccata → `found: false`. Lo start sì (l'agente è già lì).
+
+| API | Contratto |
+| --- | --- |
+| `find` / `findCells` | A* → `BeePath` (celle + punti mondo al centro) |
+| `track` | riusa il path se goal e muri sono gli stessi |
+| `follow` | avanza i waypoint, scrive `worldX/Y` |
+| `chase` | inseguimento; ricalcola se il target cambia cella |
+| `flow` / `sampleFlow` | campo verso un goal (wave / stormo) |
+| `setBlocked(c, r)` | ostacolo extra, bump `version` |
+
+Limite: non è steering con raggio. Un agent più grosso di una cella va trattato con celle “inflate” (blocca i vicini) — non lo fa da solo.
+
+## 🖥 BeeUI — Control, non un bottone su canvas
+
+`gioco.ui` è un albero in **spazio schermo**, dopo `restore` della camera. Vive in pausa. Ancoraggi tipo Godot `Control` / uGUI: frazioni 0–1 + offset in pixel. `BeeButton` resta il widget legacy su entity; i menu nuovi usano `BeeUIButton`.
+
+```javascript
+const ui = gioco.ui;
+ui.add(new BeeLabel({ text: 'SCORE', anchor: BEE_ANCHOR.TOP_LEFT, x: 16, y: 16, width: 200, height: 28 }));
+ui.add(new BeeLabel({ text: 'HP', anchor: BEE_ANCHOR.TOP_RIGHT, x: 16, y: 16, width: 120, height: 28 }));
+
+const menu = new BeeStack({
+    anchor: BEE_ANCHOR.CENTER,
+    background: 'rgba(8,10,18,0.92)',
+    image: sliceSkin,
+    slice: { left: 8, top: 8, right: 8, bottom: 8 }
+});
+menu.add(new BeeUIButton({ text: 'Riprendi', onClick: () => gioco.resume() }));
+menu.add(new BeeUIButton({ text: 'Lento', onClick: () => gioco.setTimeScale(0.25) }));
+ui.add(menu);
+```
+
+Tab / Shift+Tab, frecce (o WASD), Enter/Space, D-pad e A del gamepad. Focus con bordo. Nine-slice: `drawNineSlice` + `panel.image` / `panel.slice`.
+
+| API | Contratto |
+| --- | --- |
+| `anchor(preset, { x, y, width, height, margin })` | `topLeft` / `topRight` / `center` / `full` / lati |
+| `BeeStack` | `v` o `h`, gap, padding; i figli non usano l'array mondo |
+| `BeePanel` | fill, bordo, nine-slice |
+| `focusNext` / `focusToward` | anello dei `focusable` visibili |
+| `update` | ogni frame, anche in pausa, prima di `input.endFrame` |
+
+Limite: non è HTML/DOM. Niente input text nativo, scroll view o flex wrap — quelli sono plugin.
+
+## 🔌 Plugin (bozza, dopo il core 2.8)
+
+Il nucleo è chiuso. Queste non sono classi obbligatorie del motore: si aggiungono quando serve un genere.
+
+| Plugin | A cosa serve | Non è |
+| --- | --- | --- |
+| **BeeLight** | luci 2D, ombre, occlusion cheap | un secondo renderer |
+| **BeeDialogue** | albero dialoghi, speaker, scelte | `BeeText.drawHUD` |
+| **BeeInventory** | slot, stack, use/equip | un array `items[]` in scena |
+| **BeeQuest** | obiettivi, flag, ricompense | `if (score > 10)` |
+| **BeeNet** | sync posa / spawn, lockstep o snapshot | un server di gioco intero |
+| **BeePost** | fade, flash, shake, palette | WebGL obbligatorio |
+| **BeeLocale** | stringhe per lingua, fallback | hardcode nei `fillText` |
+| **BeeSpine** (o atlas) | scheletro 2D opzionale | sostituire `BeeSprite` |
+
+Regola: un plugin legge `gioco.time` / `gioco.ui` / `gioco.prefabs`, non rimpiazza il loop. Si parla di questi uno alla volta, come le classi del core.
+
 ## 🎬 BeeSceneManager — replace, non stack
 
 `change` sostituisce la scena. Stesso nome = restart (`onExit`/`exit` → sweep entity → `onEnter`/`enter`). Non è uno stack: niente push/pop/fade.
 
-Il manager è l’unico owner del loop entity. `scene.update` / `scene.draw` sono logica di scena e HUD, non un secondo `for` sulle entity (quello era un doppio tick).
+Il manager è l’unico owner del **tick** entity. Il **disegno** delle entity è di `BeeLayer`. `scene.drawWorld` è lo sfondo mondo; `scene.draw` è HUD.
 
 | API | Contratto |
 | --- | --- |

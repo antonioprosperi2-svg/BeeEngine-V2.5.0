@@ -41,6 +41,9 @@ export interface BeeScene {
   onEnter?(data?: unknown): void;
   onExit?(): void;
   update?(dt: number, input?: BeeInput, engine?: BeeEngine): void;
+  /** Sfondo in spazio mondo, sotto la camera, prima delle entity. */
+  drawWorld?(ctx: CanvasRenderingContext2D, engine?: BeeEngine): void;
+  /** HUD in spazio schermo, dopo `ctx.restore()` della camera. */
   draw?(ctx: CanvasRenderingContext2D, engine?: BeeEngine): void;
 }
 
@@ -216,6 +219,12 @@ export declare class BeeEntity {
   animator: BeeAnimator | null;
   animatorContext?: () => unknown;
   alpha: number;
+  /** Pass di disegno (`background` / `world` / `ysort` / `ui`). Default: `world`. */
+  drawLayer: string | null;
+  /** Override y-sort (piedi). Se null usa `y + height`. */
+  sortY: number | null;
+  /** Nome della ricetta BeePrefab che ha creato l'entity, se c'è. */
+  prefab?: string | null;
   readonly children: BeeEntity[];
 
   constructor(
@@ -322,6 +331,8 @@ export declare class BeeSceneManager {
   remove(name: string): this;
   addEntity(entity: BeeEntity): BeeEntity | undefined;
   update(dt: number, input?: BeeInput): void;
+  drawWorld(ctx?: CanvasRenderingContext2D): void;
+  drawUI(ctx?: CanvasRenderingContext2D): void;
   draw(ctx?: CanvasRenderingContext2D): void;
   getCurrentScene(): BeeScene | null;
   getCurrentSceneName(): string | null;
@@ -433,6 +444,106 @@ export declare class BeePool<T = any> {
   release(item: T): this;
   releaseAll(): this;
   clear(): this;
+}
+
+export declare const BEE_PREFAB_DEFAULTS: Readonly<{
+  width: number;
+  height: number;
+  addToScene: boolean;
+}>;
+
+export interface BeePrefabColliderSpec {
+  offsetX?: number;
+  offsetY?: number;
+  width?: number;
+  height?: number;
+}
+
+export interface BeePrefabPatrolSpec {
+  minX?: number | null;
+  maxX?: number | null;
+  0?: number | null;
+  1?: number | null;
+}
+
+export interface BeePrefabSpec {
+  type?: string | (new (...args: any[]) => BeeEntity);
+  class?: new (...args: any[]) => BeeEntity;
+  create?: (spec: BeePrefabSpec, engine: BeeEngine | null) => BeeEntity;
+  acquire?: (spec: BeePrefabSpec, engine: BeeEngine | null) => BeeEntity;
+  extend?: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  textureKey?: string | null;
+  sprite?: string | null;
+  speed?: number;
+  lives?: number;
+  hp?: number;
+  health?: number;
+  score?: number;
+  drawLayer?: string;
+  sortY?: number;
+  alpha?: number;
+  visible?: boolean;
+  active?: boolean;
+  color?: string;
+  mode?: string;
+  gravity?: number;
+  vx?: number;
+  vy?: number;
+  tag?: string;
+  name?: string;
+  text?: string;
+  font?: string;
+  align?: string;
+  canvasWidth?: number;
+  canvasHeight?: number;
+  props?: Record<string, unknown>;
+  collider?: boolean | BeePrefabColliderSpec;
+  body?: boolean | Record<string, unknown>;
+  patrol?: BeePrefabPatrolSpec | [number | null, number | null];
+  setup?: (entity: BeeEntity, spec: BeePrefabSpec, engine: BeeEngine | null) => void;
+  pool?: string;
+  addToScene?: boolean;
+  children?: Array<string | (BeePrefabSpec & { prefab?: string })>;
+  prefab?: string;
+}
+
+/**
+ * Fabbrica da dati. Non è `new BeeEnemy(...)` sparso nel gioco.
+ */
+export declare class BeePrefab {
+  engine: BeeEngine | null;
+  readonly size: number;
+
+  constructor(options?: { engine?: BeeEngine | null });
+
+  type(name: string, factory: ((spec: BeePrefabSpec, engine: BeeEngine | null) => BeeEntity) | (new (...args: any[]) => BeeEntity)): this;
+  define(name: string, spec: BeePrefabSpec): this;
+  has(name: string): boolean;
+  get(name: string): BeePrefabSpec | null;
+  list(): string[];
+  remove(name: string): this;
+  clear(): this;
+  spawn(name: string, override?: BeePrefabSpec): BeeEntity;
+  spawnMany(name: string, spots: Array<{ x?: number; y?: number } | [number, number] | BeePrefabSpec>): BeeEntity[];
+  fromList(items: Array<BeePrefabSpec & { prefab?: string }>, fallbackName?: string | null): BeeEntity[];
+  fromObjects(
+    objects: Array<{
+      x?: number;
+      y?: number;
+      width?: number;
+      height?: number;
+      type?: string;
+      name?: string;
+      prefab?: string;
+      visible?: boolean;
+      properties?: Array<{ name: string; value?: unknown }> | Record<string, unknown>;
+    }>,
+    options?: { prefabKey?: string; strict?: boolean }
+  ): BeeEntity[];
 }
 
 // ---------------------------------------------------------------------------
@@ -912,6 +1023,287 @@ export declare class BeeGrid {
       cellValue: number
     ) => void
   ): void;
+}
+
+export declare const BEE_PATH_DEFAULTS: Readonly<{
+  diagonal: boolean;
+  cornerCut: boolean;
+  walkable: number;
+  maxIterations: number;
+  arrive: number;
+}>;
+
+export interface BeePathCell {
+  col: number;
+  row: number;
+}
+
+export interface BeePathPoint {
+  x: number;
+  y: number;
+}
+
+export declare class BeePath {
+  cells: BeePathCell[];
+  points: BeePathPoint[];
+  found: boolean;
+  index: number;
+  goalCol: number;
+  goalRow: number;
+  version: number;
+  length: number;
+  readonly current: BeePathPoint | null;
+  readonly finished: boolean;
+  rewind(): this;
+  clear(): this;
+}
+
+export interface BeePathfinderOptions {
+  diagonal?: boolean;
+  cornerCut?: boolean;
+  walkable?: number | ((value: unknown, col: number, row: number) => boolean);
+  maxIterations?: number;
+  arrive?: number;
+}
+
+/**
+ * A* + flow field su griglia/tilemap. Non è chase in linea retta.
+ */
+export declare class BeePathfinder {
+  diagonal: boolean;
+  cornerCut: boolean;
+  walkable: number | ((value: unknown, col: number, row: number) => boolean);
+  maxIterations: number;
+  arrive: number;
+  readonly cols: number;
+  readonly rows: number;
+  readonly cellSize: number;
+  readonly version: number;
+
+  constructor(options?: BeePathfinderOptions);
+
+  configure(options?: BeePathfinderOptions): this;
+  useGrid(grid: BeeGrid, originX?: number, originY?: number): this;
+  useTilemap(tilemap: BeeTilemap): this;
+  useCells(data: unknown[][], cols: number, rows: number, cellSize?: number, originX?: number, originY?: number): this;
+  setBlocked(col: number, row: number, blocked?: boolean): this;
+  clearBlocked(): this;
+  isWalkable(col: number, row: number): boolean;
+  worldToCell(x: number, y: number): BeePathCell;
+  cellToWorld(col: number, row: number): BeePathPoint;
+  find(start: object, goal: object, out?: BeePath | null): BeePath;
+  findCells(startCol: number, startRow: number, goalCol: number, goalRow: number, out?: BeePath | null): BeePath;
+  track(path: BeePath | null | undefined, start: object, goal: object, out?: BeePath | null): BeePath;
+  follow(entity: BeeEntity, path: BeePath, dt: number, speed: number): boolean;
+  chase(entity: BeeEntity, target: object, dt: number, options?: { speed?: number; key?: string }): boolean;
+  flow(goal: object): this;
+  sampleFlow(x: number | object, y?: number): { x: number; y: number } | null;
+}
+
+export type BeeAnchorPreset =
+  | "topLeft"
+  | "top"
+  | "topRight"
+  | "left"
+  | "center"
+  | "right"
+  | "bottomLeft"
+  | "bottom"
+  | "bottomRight"
+  | "full";
+
+export declare const BEE_ANCHOR: Readonly<{
+  TOP_LEFT: "topLeft";
+  TOP: "top";
+  TOP_RIGHT: "topRight";
+  LEFT: "left";
+  CENTER: "center";
+  RIGHT: "right";
+  BOTTOM_LEFT: "bottomLeft";
+  BOTTOM: "bottom";
+  BOTTOM_RIGHT: "bottomRight";
+  FULL: "full";
+}>;
+
+export declare const BEE_UI_DEFAULTS: Readonly<{
+  gap: number;
+  padding: number;
+  buttonWidth: number;
+  buttonHeight: number;
+}>;
+
+export interface BeeNineSlice {
+  left?: number;
+  top?: number;
+  right?: number;
+  bottom?: number;
+  l?: number;
+  t?: number;
+  r?: number;
+  b?: number;
+}
+
+export interface BeeAnchorBox {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  margin?: number;
+}
+
+export interface BeeControlOptions extends BeeAnchorBox {
+  visible?: boolean;
+  disabled?: boolean;
+  focusable?: boolean;
+  name?: string;
+  onClick?: (control: BeeControl) => void;
+  anchor?: BeeAnchorPreset;
+  minWidth?: number;
+  minHeight?: number;
+}
+
+export declare function drawNineSlice(
+  ctx: CanvasRenderingContext2D,
+  image: CanvasImageSource & { width: number; height: number },
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  slice?: BeeNineSlice
+): void;
+
+export declare class BeeControl {
+  visible: boolean;
+  disabled: boolean;
+  focusable: boolean;
+  name: string;
+  onClick: ((control: BeeControl) => void) | null;
+  anchorLeft: number;
+  anchorTop: number;
+  anchorRight: number;
+  anchorBottom: number;
+  offsetLeft: number;
+  offsetTop: number;
+  offsetRight: number;
+  offsetBottom: number;
+  minWidth: number;
+  minHeight: number;
+  prefWidth: number;
+  prefHeight: number;
+  rect: { x: number; y: number; w: number; h: number };
+  hover: boolean;
+  pressed: boolean;
+  readonly parent: BeeControl | null;
+  readonly children: BeeControl[];
+  readonly focused: boolean;
+  readonly root: BeeUI | null;
+
+  constructor(options?: BeeControlOptions);
+
+  setAnchors(left: number, top: number, right: number, bottom: number): this;
+  setOffsets(left: number, top: number, right: number, bottom: number): this;
+  anchor(preset: BeeAnchorPreset, box?: BeeAnchorBox): this;
+  add(child: BeeControl): BeeControl;
+  remove(child: BeeControl): this;
+  contains(x: number, y: number): boolean;
+  hit(x: number, y: number): BeeControl | null;
+  fit(parentRect: { x: number; y: number; w: number; h: number }): this;
+  layout(parentRect?: { x: number; y: number; w: number; h: number }): this;
+  measure(): this;
+  place(x: number, y: number, w: number, h: number): this;
+  draw(ctx: CanvasRenderingContext2D): void;
+  activate(): boolean;
+}
+
+export interface BeePanelOptions extends BeeControlOptions {
+  background?: string | null;
+  fill?: string | null;
+  border?: string | null;
+  image?: CanvasImageSource | null;
+  slice?: BeeNineSlice | null;
+  radius?: number;
+}
+
+export declare class BeePanel extends BeeControl {
+  background: string | null;
+  border: string | null;
+  image: CanvasImageSource | null;
+  slice: BeeNineSlice | null;
+  radius: number;
+  constructor(options?: BeePanelOptions);
+}
+
+export interface BeeStackOptions extends BeePanelOptions {
+  direction?: "v" | "h";
+  gap?: number;
+  padding?: number;
+  stretch?: boolean;
+}
+
+export declare class BeeStack extends BeePanel {
+  direction: "v" | "h";
+  gap: number;
+  padding: number;
+  stretch: boolean;
+  constructor(options?: BeeStackOptions);
+}
+
+export interface BeeLabelOptions extends BeeControlOptions {
+  text?: string;
+  font?: string;
+  color?: string;
+  align?: CanvasTextAlign;
+  baseline?: CanvasTextBaseline;
+}
+
+export declare class BeeLabel extends BeeControl {
+  text: string;
+  font: string;
+  color: string;
+  align: CanvasTextAlign;
+  baseline: CanvasTextBaseline;
+  constructor(options?: BeeLabelOptions);
+}
+
+export interface BeeUIButtonOptions extends BeeControlOptions {
+  text?: string;
+  font?: string;
+  color?: string;
+  background?: string;
+  hoverBackground?: string;
+  pressedBackground?: string;
+  focusBorder?: string;
+  radius?: number;
+}
+
+export declare class BeeUIButton extends BeeControl {
+  text: string;
+  font: string;
+  color: string;
+  background: string;
+  hoverBackground: string;
+  pressedBackground: string;
+  focusBorder: string;
+  radius: number;
+  constructor(options?: BeeUIButtonOptions);
+}
+
+export declare class BeeUI extends BeePanel {
+  canvas: HTMLCanvasElement | null;
+  focus: BeeControl | null;
+  width: number;
+  height: number;
+  constructor(options?: { canvas?: HTMLCanvasElement | null; width?: number; height?: number });
+  markDirty(): this;
+  resize(width: number, height: number): this;
+  collectFocusable(out?: BeeControl[]): BeeControl[];
+  focusAt(index: number): this;
+  focusNext(): this;
+  focusPrev(): this;
+  focusToward(dx: number, dy: number): this;
+  update(input?: { mouse?: { x: number; y: number; pressed?: boolean; wasPressed?: boolean }; wasPressed?: (key: string) => boolean; isPressed?: (key: string) => boolean }): this;
+  draw(ctx: CanvasRenderingContext2D): this;
+  destroy(): this;
 }
 
 export type BeeTimerCallback = (timer: BeeTimer) => void;
@@ -1416,6 +1808,63 @@ export declare class BeeAnimator {
   update(dt: number, context?: unknown): this;
 }
 
+export type BeeDrawPass = "background" | "world" | "ysort" | "ui" | (string & {});
+export type BeeDrawSpace = "world" | "screen";
+export type BeeDrawSort = "stable" | "y";
+
+export declare const BEE_DRAW: Readonly<{
+  BACKGROUND: "background";
+  WORLD: "world";
+  YSORT: "ysort";
+  UI: "ui";
+}>;
+
+export declare const BEE_SPACE: Readonly<{
+  WORLD: "world";
+  SCREEN: "screen";
+}>;
+
+export declare const BEE_LAYER_DEFAULTS: Readonly<{
+  space: BeeDrawSpace;
+  sort: BeeDrawSort;
+  visible: boolean;
+}>;
+
+export interface BeeLayerSpec {
+  space?: BeeDrawSpace;
+  sort?: BeeDrawSort | "ysort";
+  visible?: boolean;
+  order?: number;
+}
+
+export interface BeeLayerInfo {
+  name: string;
+  space: BeeDrawSpace;
+  sort: BeeDrawSort;
+  visible: boolean;
+  order: number;
+}
+
+/**
+ * Pipeline di disegno. Non è {@link BEE_LAYER} (bitmask fisica).
+ * background / world / ysort stanno sotto la camera; ui è spazio schermo.
+ */
+export declare class BeeLayer {
+  readonly size: number;
+
+  constructor(options?: { defaults?: boolean });
+
+  add(name: string, spec?: BeeLayerSpec): this;
+  remove(name: string): this;
+  has(name: string): boolean;
+  get(name: string): BeeLayerInfo | null;
+  list(): BeeLayerInfo[];
+  items(name: string): BeeEntity[];
+  collect(engine: Pick<BeeEngine, "entities" | "currentScene" | "scenes" | "getEntityDrawBounds"> | BeeEngine): this;
+  drawWorld(ctx: CanvasRenderingContext2D, engine: BeeEngine): this;
+  drawScreen(ctx: CanvasRenderingContext2D, engine: BeeEngine): this;
+}
+
 export declare class BeeTilemapLoader {
   engine: BeeEngine;
   solidColliders: BeeRectCollider[];
@@ -1641,6 +2090,10 @@ export declare class BeeEngine {
   timers: BeeTimerClock;
   tweens: BeeTweenClock;
   audio: BeeAudioMixer;
+  layers: BeeLayer;
+  prefabs: BeePrefab;
+  pathfinder: BeePathfinder;
+  ui: BeeUI;
   save: BeeSaveStore;
   debug: BeeLadybug;
   lastTime: number;
@@ -1664,6 +2117,7 @@ export declare class BeeEngine {
     reservedHeight?: number
   ): void;
 
+  setGrid(grid: BeeGrid | null): this;
   setScene(name: string, data?: unknown): void;
   lockOrientation(orientation?: string): void;
   pause(): this;
@@ -1723,8 +2177,18 @@ export declare class BeeEngine {
   updateEntities(dt: number, input: BeeInput): void;
   renderEntities(ctx: CanvasRenderingContext2D): void;
   getEntityDrawBounds(entity: BeeEntity): BeeRect | null;
-  isRectVisibleInView(x: number, y: number, width: number, height: number): boolean;
-  drawEntity(ctx: CanvasRenderingContext2D, entity: BeeEntity): void;
+  isRectVisibleInView(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    space?: BeeDrawSpace
+  ): boolean;
+  drawEntity(
+    ctx: CanvasRenderingContext2D,
+    entity: BeeEntity,
+    options?: { space?: BeeDrawSpace; pass?: string }
+  ): void;
   checkCollision(rect1: BeeRect, rect2: BeeRect): boolean;
 
   loadAsset(type: string, name: string, src: string): Promise<any>;

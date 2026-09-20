@@ -1,7 +1,9 @@
 /**
  * BeeSceneManager — registro di scene e una sola corrente.
  * `change` è replace, non uno stack: stesso nome = restart (exit + sweep + enter).
- * Il manager è l'unico owner del loop entity. scene.update/draw sono logica e HUD.
+ * Il manager è l'unico owner del loop entity.
+ * scene.drawWorld = sfondo in spazio mondo (sotto la camera).
+ * scene.draw = HUD in spazio schermo (dopo la camera). Le entity le dipinge BeeLayer.
  */
 
 export class BeeSceneManager {
@@ -119,23 +121,24 @@ export class BeeSceneManager {
         this.#tickEntities(dt, input ?? this.engine.input);
     }
 
-    draw(ctx = this.ctx) {
-        if (!this.currentScene) return;
-
+    drawWorld(ctx = this.ctx) {
         const scene = this.currentScene;
+        if (!scene) return;
+        if (typeof scene.drawWorld === 'function') {
+            scene.drawWorld(ctx, this.engine);
+        }
+    }
+
+    drawUI(ctx = this.ctx) {
+        const scene = this.currentScene;
+        if (!scene) return;
         if (typeof scene.draw === 'function') {
             scene.draw(ctx, this.engine);
         }
+    }
 
-        const list = scene.entities;
-        if (!list || list.length === 0) return;
-
-        const engine = this.engine;
-        for (let i = 0; i < list.length; i++) {
-            const entity = list[i];
-            if (!entity || entity.destroyed) continue;
-            engine.drawEntity(ctx, entity);
-        }
+    draw(ctx = this.ctx) {
+        this.drawWorld(ctx);
     }
 
     getCurrentScene() {

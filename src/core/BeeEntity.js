@@ -85,6 +85,8 @@ export class BeeEntity {
         this.pool = null;
         this.animator = null;
         this.alpha = 1;
+        this.drawLayer = null;
+        this.sortY = null;
         this.#torn = false;
     }
 
