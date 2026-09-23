@@ -342,7 +342,11 @@ Il manager è l’unico owner del **tick** entity. Il **disegno** delle entity �
 | `persistEntities: true` | uscire non distrugge le entity |
 | `gioco.addEntity` | se c’è una scena corrente, va lì, non in `engine.entities` |
 
-`engine.destroy()` chiama `scenes.destroy()` (exit della corrente, sweep di tutte, Map vuota).
+`gioco.setScene(name)` chiama `destroy()` su ogni voce di `engine.entities` (body esce dal world; pooled torna in pila), poi svuota l’array e fa `scenes.change`. Senza quel ciclo il body restava nel world — leak silenzioso.
+
+`engine.destroy()` chiama `scenes.destroy()` (exit della corrente, sweep di tutte, Map vuota). Stacca resize e unlock audio. **Non** stacca `BeeInput` (keydown/mouse/touch restano su `window`/`canvas`): va bene se il motore vive per tutta la pagina; non ricreare più istanze sulla stessa pagina senza un teardown input dedicato.
+
+`enableAutoResize` sostituisce l’handler precedente: due chiamate non accumulano listener `resize`.
 
 ## 🧭 BeeTransform (v2.5.0) — scena grafo affine
 

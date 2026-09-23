@@ -195,6 +195,10 @@ export class BeeEngine {
     }
 
     enableAutoResize(baseWidth = this.canvas.width, baseHeight = this.canvas.height, reservedHeight = 0) {
+        if (this._resizeHandler) {
+            window.removeEventListener('resize', this._resizeHandler);
+        }
+
         this.canvas.style.display = 'block';
         this.canvas.style.margin = '0 auto';
 
@@ -229,6 +233,9 @@ export class BeeEngine {
     }
 
     setScene(name, data = null) {
+        for (const e of this.entities) {
+            if (typeof e.destroy === 'function') e.destroy();
+        }
         this.entities.length = 0;
         if (this.scenes) {
             this.scenes.change(name, data);
