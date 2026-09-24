@@ -1,8 +1,8 @@
 ![BeeEngine](https://raw.githubusercontent.com/antonioprosperi2-svg/BeeEngine-V2.0/main/Gemini_Generated_Image_pz9goopz9goopz9g.jpg)
-# 🐝 Motore di gioco 2D BeeEngine (v2.8.0 Professional)
+# 🐝 Motore di gioco 2D BeeEngine (v2.8.1 Professional)
 
 BeeEngine è un motore di gioco 2D leggero, modulare e altamente ottimizzato scritto in puro JavaScript moderno (ES Modules) per HTML5 Canvas.
-La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
+La **2.8.1** dà a `BeeCollectible` un `collect()` vero e sistema caduta su `worldY`. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
 
 ## 📁 Struttura del Progetto Aggiornata
 
@@ -248,6 +248,18 @@ gioco.prefabs.fromObjects(map.layers[2].objects); // Tiled: type/name/properties
 | `children` | prefab annidati, non aggiunti di nuovo alla scena |
 
 `BeePool` è il riuso GC. `BeePrefab` è il template. Si possono combinare con `pool: 'enemy'` sulla ricetta (acquire + apply).
+
+## 🎁 BeeCollectible — raccogliere, non solo cadere
+
+Cade a `speed` fissa su **`worldY`** (non `y` locale). Fuori dallo schermo in basso: `reset()` in cima. Toccare il player non fa nulla da solo — la scena chiama `collect(collector)`.
+
+```javascript
+if (player.collidesWith(item)) item.collect(player);
+// oppure
+gioco.collisions.overlap('player', 'loot', (p, item) => item.collect(p));
+```
+
+`collect` è no-op se `destroyed` o `!active`. Chiama `onCollect(item, collector)` e poi `destroy()` (release se pooled, teardown altrimenti). `gravity`/`vx`/`vy` restano a 0: il moto è solo `speed`, `integrate()` non lo muove. `recycle()` esiste come hook di pool; oggi è vuoto perché `reset()` rigenera già posa e velocità all'`acquire`.
 
 ## 🧭 BeePathfinder — A* e flow field, non chase in linea retta
 

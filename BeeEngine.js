@@ -147,7 +147,9 @@ export class BeeEngine {
                 spec.canvasHeight ?? this.canvas.height,
                 spec.textureKey ?? spec.sprite ?? null,
                 spec.width ?? 20,
-                spec.height ?? 20
+                spec.height ?? 20,
+                spec.value ?? spec.score ?? 1,
+                spec.onCollect ?? null
             ))
             .type('text', (spec) => new BeeText(
                 spec.text ?? '',

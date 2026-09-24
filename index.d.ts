@@ -500,6 +500,8 @@ export interface BeePrefabSpec {
   align?: string;
   canvasWidth?: number;
   canvasHeight?: number;
+  value?: number;
+  onCollect?: ((item: BeeCollectible, collector: unknown) => void) | null;
   props?: Record<string, unknown>;
   collider?: boolean | BeePrefabColliderSpec;
   body?: boolean | Record<string, unknown>;
@@ -834,16 +836,22 @@ export declare class BeeCollectible extends BeeEntity {
   canvasHeight: number;
   textureKey: string | null;
   speed: number;
+  value: number;
+  onCollect: ((item: BeeCollectible, collector: unknown) => void) | null;
 
   constructor(
     canvasWidth?: number,
     canvasHeight?: number,
     textureKey?: string | null,
     width?: number,
-    height?: number
+    height?: number,
+    value?: number,
+    onCollect?: ((item: BeeCollectible, collector: unknown) => void) | null
   );
 
   reset(): void;
+  collect(collector?: unknown): void;
+  recycle(): void;
   update(dt: number, input?: BeeInput, engine?: BeeEngine): void;
   draw(ctx: CanvasRenderingContext2D, engine?: BeeEngine): void;
 }

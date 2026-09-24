@@ -36,7 +36,11 @@ const mainScene = {
         const shooter = new BeeEnemyShooter(520, 220, 32, 32);
 
         // Collectibles
-        const collectible = new BeeCollectible(800, 600);
+        const collectible = new BeeCollectible(800, 600, null, 20, 20, 1, (item, collector) => {
+            if (collector && typeof collector.addScore === 'function') {
+                collector.addScore(item.value);
+            }
+        });
 
         this.entities = [ground, platform1, platform2, enemy, shooter, collectible, this.player];
 
@@ -45,8 +49,12 @@ const mainScene = {
         game.collisions.setGroup('solids', [ground, platform1, platform2]);
         game.collisions.setGroup('player', [this.player]);
         game.collisions.setGroup('hazards', [enemy, shooter]);
+        game.collisions.setGroup('loot', [collectible]);
 
         game.collisions.solid('player', 'solids');
+        game.collisions.overlap('player', 'loot', (p, item) => {
+            if (item && typeof item.collect === 'function') item.collect(p);
+        });
         game.collisions.overlap('player', 'hazards', (p, h) => {
             const isDead = p.takeDamage(1);
             if (isDead) {
