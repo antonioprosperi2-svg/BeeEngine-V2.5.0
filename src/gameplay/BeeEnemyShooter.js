@@ -4,16 +4,22 @@ import { BeeTimer } from '../core/BeeTimer.js';
 
 /**
  * BeeEnemyShooter: Advanced enemy capable of multi-directional movement and shooting projectiles.
+ * Bounces within explicit world bounds (setBounds); falls back to canvas size if unset.
  */
 export class BeeEnemyShooter extends BeeEnemy {
     constructor(x = 0, y = 0, width = 40, height = 40, textureKey = null) {
         super(x, y, width, height, textureKey);
-        this.speed = 0;
+        this.speed = 0; // patrol motion (BeeEnemy) unused here; vx/vy drive movement instead
         this.vx = 80;
         this.vy = 60;
         this.shootInterval = 1.5;
         this.bulletSpeed = 250;
+        this.bulletGroup = 'hazards'; // collision group new bullets join, if the engine has one
         this.engine = null;
+        this.boundsMinX = 0;
+        this.boundsMinY = 0;
+        this.boundsMaxX = null; // null = fall back to engine.canvas width/height
+        this.boundsMaxY = null;
         this.fire = new BeeTimer({
             duration: this.shootInterval,
             loop: true,
@@ -30,7 +36,17 @@ export class BeeEnemyShooter extends BeeEnemy {
         return this.fire ? this.fire.remaining : 0;
     }
 
+    /** Explicit patrol/bounce bounds in world space. Unset axes fall back to canvas size. */
+    setBounds(minX, minY, maxX, maxY) {
+        this.boundsMinX = minX;
+        this.boundsMinY = minY;
+        this.boundsMaxX = maxX;
+        this.boundsMaxY = maxY;
+    }
+
     update(dt, input, engine) {
+        if (this.destroyed || !this.active) return;
+
         this.engine = engine || this.engine;
         this.fire.duration = this.shootInterval;
         if (engine && engine.time) {
@@ -41,17 +57,35 @@ export class BeeEnemyShooter extends BeeEnemy {
 
         super.update(dt, input, engine);
 
-        if (engine && engine.canvas) {
-            const canvasW = engine.canvas.width;
-            const canvasH = engine.canvas.height;
+        const maxX = this.boundsMaxX ?? (engine && engine.canvas ? engine.canvas.width : null);
+        const maxY = this.boundsMaxY ?? (engine && engine.canvas ? engine.canvas.height : null);
+        if (maxX == null || maxY == null) return;
 
-            if (this.worldX <= 0 || this.worldX + this.width >= canvasW) {
-                this.vx = -this.vx;
-            }
-            if (this.worldY <= 0 || this.worldY + this.height >= canvasH) {
-                this.vy = -this.vy;
-            }
+        if (this.worldX <= this.boundsMinX) {
+            this.vx = Math.abs(this.vx);
+            this.worldX = this.boundsMinX;
+        } else if (this.worldX + this.width >= maxX) {
+            this.vx = -Math.abs(this.vx);
+            this.worldX = maxX - this.width;
         }
+
+        if (this.worldY <= this.boundsMinY) {
+            this.vy = Math.abs(this.vy);
+            this.worldY = this.boundsMinY;
+        } else if (this.worldY + this.height >= maxY) {
+            this.vy = -Math.abs(this.vy);
+            this.worldY = maxY - this.height;
+        }
+    }
+
+    /** Pool hook: called on acquire — start() resets elapsed/cancelled/running in one call. */
+    reset() {
+        this.fire.start();
+    }
+
+    /** Pool hook: called on release — stop firing while dormant. */
+    recycle() {
+        if (this.fire) this.fire.cancel();
     }
 
     destroy() {
@@ -61,15 +95,16 @@ export class BeeEnemyShooter extends BeeEnemy {
 
     shoot(engine) {
         let bulletVx = 0;
-        let bulletVy = this.bulletSpeed;
+        let bulletVy = this.bulletSpeed; // default: straight down
 
         if (Math.abs(this.vx) > Math.abs(this.vy)) {
             bulletVx = this.vx > 0 ? this.bulletSpeed : -this.bulletSpeed;
             bulletVy = 0;
-        } else {
+        } else if (this.vy !== 0 || this.vx !== 0) {
             bulletVy = this.vy > 0 ? this.bulletSpeed : -this.bulletSpeed;
             bulletVx = 0;
         }
+        // vx === vy === 0: keeps the default above (down), not the old accidental "up".
 
         const bulletX = this.worldX + this.width / 2 - 4;
         const bulletY = this.worldY + this.height / 2 - 4;
@@ -80,11 +115,17 @@ export class BeeEnemyShooter extends BeeEnemy {
 
         if (bullet && engine && typeof engine.addEntity === 'function') {
             engine.addEntity(bullet);
+            if (this.bulletGroup && engine.collisions && typeof engine.collisions.add === 'function') {
+                engine.collisions.add(this.bulletGroup, bullet);
+            }
         }
     }
 
     draw(ctx, engine) {
-        const texture = (engine && this.textureKey) ? engine.getAsset(this.textureKey) : null;
+        const texture = (engine && this.textureKey && typeof engine.getAsset === 'function')
+            ? engine.getAsset(this.textureKey)
+            : null;
+
         const wx = this.worldX;
         const wy = this.worldY;
         if (texture) {

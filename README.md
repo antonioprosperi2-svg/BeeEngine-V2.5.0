@@ -1,8 +1,8 @@
 ![BeeEngine](https://raw.githubusercontent.com/antonioprosperi2-svg/BeeEngine-V2.0/main/Gemini_Generated_Image_pz9goopz9goopz9g.jpg)
-# 🐝 Motore di gioco 2D BeeEngine (v2.8.1 Professional)
+# 🐝 Motore di gioco 2D BeeEngine (v2.8.2 Professional)
 
 BeeEngine è un motore di gioco 2D leggero, modulare e altamente ottimizzato scritto in puro JavaScript moderno (ES Modules) per HTML5 Canvas.
-La **2.8.1** dà a `BeeCollectible` un `collect()` vero e sistema caduta su `worldY`. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
+La **2.8.2** sistema `BeeEnemyShooter` (rimbalzo clampato, pool del timer, proiettili nel gruppo collisioni). La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
 
 ## 📁 Struttura del Progetto Aggiornata
 
@@ -260,6 +260,12 @@ gioco.collisions.overlap('player', 'loot', (p, item) => item.collect(p));
 ```
 
 `collect` è no-op se `destroyed` o `!active`. Chiama `onCollect(item, collector)` e poi `destroy()` (release se pooled, teardown altrimenti). `gravity`/`vx`/`vy` restano a 0: il moto è solo `speed`, `integrate()` non lo muove. `recycle()` esiste come hook di pool; oggi è vuoto perché `reset()` rigenera già posa e velocità all'`acquire`.
+
+## 🔫 BeeEnemyShooter — rimbalzo clampato, non flip del segno
+
+`update` esce se `destroyed` / `!active`. Rimbalza su `worldX`/`worldY` dentro `setBounds` (se manca, il canvas). Oltre il bordo: clamp + `Math.abs` sulla velocità — niente jitter. Il moto è `vx`/`vy`; `speed` resta 0 così il patrol locale di `BeeEnemy` non si somma.
+
+`shoot()` mette il proiettile in `bulletGroup` (default `'hazards'`) via `collisions.add`. Fermato (`vx === vy === 0`) spara in giù, non in su. In pool: `recycle()` cancella `fire`, `reset()` fa `fire.start()` (stesso `BeeTimer`, niente new).
 
 ## 🧭 BeePathfinder — A* e flow field, non chase in linea retta
 

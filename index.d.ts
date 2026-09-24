@@ -768,7 +768,13 @@ export declare class BeeEnemyShooter extends BeeEnemy {
   shootInterval: number;
   readonly shootTimer: number;
   bulletSpeed: number;
+  bulletGroup: string | null;
   fire: BeeTimer;
+  boundsMinX: number;
+  boundsMinY: number;
+  boundsMaxX: number | null;
+  boundsMaxY: number | null;
+  engine: BeeEngine | null;
 
   constructor(
     x: number,
@@ -778,7 +784,10 @@ export declare class BeeEnemyShooter extends BeeEnemy {
     textureKey?: string | null
   );
 
-  update(dt: number, input: BeeInput, engine: BeeEngine): void;
+  setBounds(minX: number, minY: number, maxX?: number | null, maxY?: number | null): void;
+  reset(): void;
+  recycle(): void;
+  update(dt: number, input?: BeeInput, engine?: BeeEngine): void;
   shoot(engine: BeeEngine): void;
   draw(ctx: CanvasRenderingContext2D, engine?: BeeEngine): void;
   destroy(): void;
