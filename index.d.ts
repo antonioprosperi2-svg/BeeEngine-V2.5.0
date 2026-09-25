@@ -1702,15 +1702,41 @@ export declare class BeeSave {
   static loadSlot<T = unknown>(index: number, defaultValue?: T | null): T | null;
 }
 
+export interface BeeMenuItem {
+  label: string;
+  next?: string | null;
+  onSelect?: (engine: BeeEngine, scene: BeeMenuScene) => void;
+}
+
+export interface BeeMenuSceneOptions {
+  title?: string;
+  subtitle?: string;
+  hint?: string;
+  footer?: string;
+  items?: BeeMenuItem[];
+  next?: string | null;
+  onStart?: (engine: BeeEngine, scene: BeeMenuScene) => void;
+}
+
 export declare class BeeMenuScene implements BeeScene {
   engine: BeeEngine | null;
+  entities: BeeEntity[];
+  title: string;
+  subtitle: string;
+  hint: string;
+  footer: string;
+  items: BeeMenuItem[];
+  next: string | null;
+  onStart: ((engine: BeeEngine, scene: BeeMenuScene) => void) | null;
+  selected: number;
 
-  constructor();
+  constructor(options?: BeeMenuSceneOptions);
 
-  enter(): void;
+  enter(data?: unknown): void;
   exit(): void;
-  update(dt: number, input: BeeInput): void;
-  draw(ctx: CanvasRenderingContext2D): void;
+  itemBounds(index: number, width: number, height: number): { x: number; y: number; w: number; h: number };
+  update(dt: number, input?: BeeInput, engine?: BeeEngine): void;
+  draw(ctx: CanvasRenderingContext2D, engine?: BeeEngine): void;
 }
 
 export declare class BeeJoystick {

@@ -1,8 +1,8 @@
 ![BeeEngine](https://raw.githubusercontent.com/antonioprosperi2-svg/BeeEngine-V2.0/main/Gemini_Generated_Image_pz9goopz9goopz9g.jpg)
-# 🐝 Motore di gioco 2D BeeEngine (v2.8.2 Professional)
+# 🐝 Motore di gioco 2D BeeEngine (v2.8.3 Professional)
 
 BeeEngine è un motore di gioco 2D leggero, modulare e altamente ottimizzato scritto in puro JavaScript moderno (ES Modules) per HTML5 Canvas.
-La **2.8.2** sistema `BeeEnemyShooter` (rimbalzo clampato, pool del timer, proiettili nel gruppo collisioni). La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
+La **2.8.3** rende `BeeMenuScene` un menu configurabile (`next` / voci), non una splash verso `'game'`. La **2.8.2** sistema `BeeEnemyShooter`. La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
 
 ## 📁 Struttura del Progetto Aggiornata
 
@@ -365,6 +365,26 @@ Il manager è l’unico owner del **tick** entity. Il **disegno** delle entity �
 `engine.destroy()` chiama `scenes.destroy()` (exit della corrente, sweep di tutte, Map vuota). Stacca resize e unlock audio. **Non** stacca `BeeInput` (keydown/mouse/touch restano su `window`/`canvas`): va bene se il motore vive per tutta la pagina; non ricreare più istanze sulla stessa pagina senza un teardown input dedicato.
 
 `enableAutoResize` sostituisce l’handler precedente: due chiamate non accumulano listener `resize`.
+
+## 📋 BeeMenuScene — menu, non splash verso `'game'`
+
+Scena riusabile: `enter` / `exit` / `update` / `draw`. Il target non è mai hardcodato.
+
+```javascript
+gioco.scenes.add('menu', new BeeMenuScene({
+    title: 'BEE ENGINE',
+    subtitle: 'PLATFORM & ACTION',
+    next: 'main',
+    items: [
+        { label: 'Gioca', next: 'main' },
+        { label: 'Esci', onSelect: () => window.close() }
+    ]
+}));
+```
+
+Senza `items`: Invio / Spazio / click → `next` o `onStart(engine)`. Con `items`: frecce / WASD, conferma, click sulla voce. `draw` fa `save`/`restore`. Il blink usa `engine.time.elapsed`, non `Date.now()`. Senza engine: `console.warn`, non no-op muto.
+
+Il loop **non** chiama `scenes.update` in pausa. Un menu + `engine.pause()` è schermo fermo — non è un bug della scena, è il contratto del loop.
 
 ## 🧭 BeeTransform (v2.5.0) — scena grafo affine
 
