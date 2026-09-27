@@ -14,6 +14,8 @@ export class BeeEnemy extends BeeEntity {
      */
     constructor(x = 0, y = 0, width = 32, height = 32, textureKey = null) {
         super(x, y, width, height);
+        // Moto manuale via `speed` su worldX. Non settare vx/gravity insieme a questo
+        // senza togliere prima la logica di speed — altrimenti integrate() raddoppia il moto.
         this.speed = 50;
         this.textureKey = textureKey;
         this.minX = null;
@@ -31,12 +33,16 @@ export class BeeEnemy extends BeeEntity {
     }
 
     update(dt, input, engine) {
-        this.x += this.speed * dt;
+        if (this.destroyed || !this.active) return;
 
-        if (this.maxX !== null && this.worldX > this.maxX) {
+        this.worldX += this.speed * dt;
+
+        if (this.maxX !== null && this.worldX + this.width > this.maxX) {
+            this.worldX = this.maxX - this.width;
             this.speed = -Math.abs(this.speed);
         }
         if (this.minX !== null && this.worldX < this.minX) {
+            this.worldX = this.minX;
             this.speed = Math.abs(this.speed);
         }
 
@@ -44,7 +50,9 @@ export class BeeEnemy extends BeeEntity {
     }
 
     draw(ctx, engine) {
-        const texture = (engine && this.textureKey) ? engine.getAsset(this.textureKey) : null;
+        const texture = (engine && this.textureKey && typeof engine.getAsset === 'function')
+            ? engine.getAsset(this.textureKey)
+            : null;
         const wx = this.worldX;
         const wy = this.worldY;
         if (texture) {

@@ -1,8 +1,8 @@
 ![BeeEngine](https://raw.githubusercontent.com/antonioprosperi2-svg/BeeEngine-V2.0/main/Gemini_Generated_Image_pz9goopz9goopz9g.jpg)
-# 🐝 Motore di gioco 2D BeeEngine (v2.8.3 Professional)
+# 🐝 Motore di gioco 2D BeeEngine (v2.8.4 Professional)
 
 BeeEngine è un motore di gioco 2D leggero, modulare e altamente ottimizzato scritto in puro JavaScript moderno (ES Modules) per HTML5 Canvas.
-La **2.8.3** rende `BeeMenuScene` un menu configurabile (`next` / voci), non una splash verso `'game'`. La **2.8.2** sistema `BeeEnemyShooter`. La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
+La **2.8.4** allinea `BeeEnemy.update` a `worldX` (clamp AABB, spento non cammina). La **2.8.3** rende `BeeMenuScene` un menu configurabile. La **2.8.2** sistema `BeeEnemyShooter`. La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
 
 ## 📁 Struttura del Progetto Aggiornata
 
@@ -260,6 +260,10 @@ gioco.collisions.overlap('player', 'loot', (p, item) => item.collect(p));
 ```
 
 `collect` è no-op se `destroyed` o `!active`. Chiama `onCollect(item, collector)` e poi `destroy()` (release se pooled, teardown altrimenti). `gravity`/`vx`/`vy` restano a 0: il moto è solo `speed`, `integrate()` non lo muove. `recycle()` esiste come hook di pool; oggi è vuoto perché `reset()` rigenera già posa e velocità all'`acquire`.
+
+## 👾 BeeEnemy — patrol su `worldX`, muro vero
+
+`update` esce se `destroyed` / `!active`. Cammina su **`worldX`**, non `x` locale. `setPatrolBounds(minX, maxX)` è AABB: a destra `worldX + width`, non il bordo sinistro dello sprite. Oltre il limite: clamp + inversione di `speed`. Il moto è solo `speed` — non accendere `vx`/`gravity` insieme.
 
 ## 🔫 BeeEnemyShooter — rimbalzo clampato, non flip del segno
 
