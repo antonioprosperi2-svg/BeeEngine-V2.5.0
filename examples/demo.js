@@ -78,12 +78,12 @@ const mainScene = {
     },
 
     draw(ctx) {
-        BeeText.drawHUD(ctx, this.player?.score || 0, this.player?.lives || 3, 'BEE ENGINE 2D DEMO');
+        BeeText.drawHUD(ctx, this.player?.score || 0, this.player?.lives || 3, 'PIATTAFORME — solids da collisions.solid');
         ctx.fillStyle = '#ffd700';
         ctx.font = '14px monospace';
         ctx.textAlign = 'left';
         ctx.fillText(
-            `${game.time.timeScale.toFixed(2)}x  game ${game.time.elapsed.toFixed(1)}s  real ${game.time.unscaledElapsed.toFixed(1)}s`,
+            'WASD / frecce  spazio=salta   BeePlatform e solo uno sprite',
             20,
             ctx.canvas.height - 16
         );

@@ -1,8 +1,8 @@
 ![BeeEngine](https://raw.githubusercontent.com/antonioprosperi2-svg/BeeEngine-V2.0/main/Gemini_Generated_Image_pz9goopz9goopz9g.jpg)
-# 🐝 Motore di gioco 2D BeeEngine (v2.8.4 Professional)
+# 🐝 Motore di gioco 2D BeeEngine (v2.8.5 Professional)
 
 BeeEngine è un motore di gioco 2D leggero, modulare e altamente ottimizzato scritto in puro JavaScript moderno (ES Modules) per HTML5 Canvas.
-La **2.8.4** allinea `BeeEnemy.update` a `worldX` (clamp AABB, spento non cammina). La **2.8.3** rende `BeeMenuScene` un menu configurabile. La **2.8.2** sistema `BeeEnemyShooter`. La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
+La **2.8.5** allinea `BeePlatform.draw` (getAsset + save/restore) e chiarisce che la solidità è di `collisions.solid`. La **2.8.4** allinea `BeeEnemy.update` a `worldX`. La **2.8.3** rende `BeeMenuScene` un menu configurabile. La **2.8.2** sistema `BeeEnemyShooter`. La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
 
 ## 📁 Struttura del Progetto Aggiornata
 
@@ -264,6 +264,12 @@ gioco.collisions.overlap('player', 'loot', (p, item) => item.collect(p));
 ## 👾 BeeEnemy — patrol su `worldX`, muro vero
 
 `update` esce se `destroyed` / `!active`. Cammina su **`worldX`**, non `x` locale. `setPatrolBounds(minX, maxX)` è AABB: a destra `worldX + width`, non il bordo sinistro dello sprite. Oltre il limite: clamp + inversione di `speed`. Il moto è solo `speed` — non accendere `vx`/`gravity` insieme.
+
+## 🟫 BeePlatform — sprite, non un collider
+
+Rettangolo o texture. La solidità **non** vive sulla classe: la scena fa `collisions.solid('player', 'solids')` e il mover chiama `resolvePlatformCollision`. `draw` fa `save`/`restore` e chiama `getAsset` solo se esiste.
+
+Demo: apri `examples/platform.html` (WASD / frecce, spazio per saltare).
 
 ## 🔫 BeeEnemyShooter — rimbalzo clampato, non flip del segno
 

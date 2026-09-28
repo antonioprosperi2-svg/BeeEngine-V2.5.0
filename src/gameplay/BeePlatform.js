@@ -1,7 +1,10 @@
 import { BeeEntity } from '../core/BeeEntity.js';
 
 /**
- * Classe BeePlatform: Rappresenta una piattaforma solida su cui i personaggi possono camminare e atterrare.
+ * BeePlatform: sprite statico (rettangolo o texture) pensato per essere
+ * registrato in un gruppo di collisione "solido" (es. collisions.solid('player', 'solids')).
+ * La solidità (camminarci sopra, atterrarci) non è gestita qui: la fornisce
+ * chi si muove, chiamando resolvePlatformCollision (su BeeEntity) contro questo gruppo.
  */
 export class BeePlatform extends BeeEntity {
     constructor(x, y, width = 100, height = 20, color = '#ffd700', textureKey = null) {
@@ -11,7 +14,12 @@ export class BeePlatform extends BeeEntity {
     }
 
     draw(ctx, engine) {
-        const texture = (engine && this.textureKey) ? engine.getAsset(this.textureKey) : null;
+        if (!ctx) return;
+        ctx.save();
+
+        const texture = (engine && this.textureKey && typeof engine.getAsset === 'function')
+            ? engine.getAsset(this.textureKey)
+            : null;
         const wx = this.worldX;
         const wy = this.worldY;
         if (texture) {
@@ -27,5 +35,7 @@ export class BeePlatform extends BeeEntity {
             ctx.lineWidth = 1.5;
             ctx.strokeRect(wx, wy, this.width, this.height);
         }
+
+        ctx.restore();
     }
 }
