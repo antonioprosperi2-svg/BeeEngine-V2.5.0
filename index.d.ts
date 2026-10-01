@@ -41,6 +41,8 @@ export interface BeeScene {
   onEnter?(data?: unknown): void;
   onExit?(): void;
   update?(dt: number, input?: BeeInput, engine?: BeeEngine): void;
+  /** Dopo il tick entity dello stesso frame (es. consumeAttack). */
+  lateUpdate?(dt: number, input?: BeeInput, engine?: BeeEngine): void;
   /** Sfondo in spazio mondo, sotto la camera, prima delle entity. */
   drawWorld?(ctx: CanvasRenderingContext2D, engine?: BeeEngine): void;
   /** HUD in spazio schermo, dopo `ctx.restore()` della camera. */
@@ -730,15 +732,17 @@ export declare class BeePlayer extends BeeEntity {
     textureKey?: string | null
   );
 
+  setMode(mode: BeePlayerMode | string): this;
   jump(): void;
   boostJump(amount: number): void;
   potenziaSalto(amount: number): void;
   boostJumpTemporary(amount: number, durationMs: number): void;
   potenziaSaltoTemporaneo(amount: number, durationMs: number): void;
+  consumeAttack(): boolean;
   addScore(points: number): void;
   takeDamage(amount?: number): boolean;
 
-  update(dt: number, input: BeeInput, engine?: BeeEngine): void;
+  update(dt: number, input?: BeeInput | null, engine?: BeeEngine): void;
   draw(ctx: CanvasRenderingContext2D, engine?: BeeEngine): void;
   destroy(): void;
 }

@@ -97,8 +97,11 @@ function applyFields(entity, spec, engine) {
     if (typeof spec.visible === 'boolean') entity.visible = spec.visible;
     if (typeof spec.active === 'boolean') entity.active = spec.active;
     if (spec.color != null) entity.color = spec.color;
-    if (spec.mode != null) entity.mode = spec.mode;
     if (typeof spec.gravity === 'number') entity.gravity = spec.gravity;
+    if (spec.mode != null) {
+        if (typeof entity.setMode === 'function') entity.setMode(spec.mode);
+        else entity.mode = spec.mode;
+    }
     if (typeof spec.vx === 'number') entity.vx = spec.vx;
     if (typeof spec.vy === 'number') entity.vy = spec.vy;
     if (spec.tag != null) entity.tag = spec.tag;

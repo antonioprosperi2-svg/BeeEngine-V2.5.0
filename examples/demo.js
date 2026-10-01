@@ -22,7 +22,7 @@ const mainScene = {
     enter() {
         // Player setup
         this.player = new BeePlayer(100, 300, 40, 40);
-        this.player.mode = 'platformer';
+        this.player.setMode('platformer');
 
         // Platforms
         const ground = new BeePlatform(0, 520, 800, 80);

@@ -1,8 +1,8 @@
 ![BeeEngine](https://raw.githubusercontent.com/antonioprosperi2-svg/BeeEngine-V2.0/main/Gemini_Generated_Image_pz9goopz9goopz9g.jpg)
-# 🐝 Motore di gioco 2D BeeEngine (v2.8.5 Professional)
+# 🐝 Motore di gioco 2D BeeEngine (v2.8.6 Professional)
 
 BeeEngine è un motore di gioco 2D leggero, modulare e altamente ottimizzato scritto in puro JavaScript moderno (ES Modules) per HTML5 Canvas.
-La **2.8.5** allinea `BeePlatform.draw` (getAsset + save/restore) e chiarisce che la solidità è di `collisions.solid`. La **2.8.4** allinea `BeeEnemy.update` a `worldX`. La **2.8.3** rende `BeeMenuScene` un menu configurabile. La **2.8.2** sistema `BeeEnemyShooter`. La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
+La **2.8.6** sistema `BeePlayer` (fisica senza input, `setMode`, `consumeAttack`, boost permanente vs temporaneo). La **2.8.5** allinea `BeePlatform.draw`. La **2.8.4** allinea `BeeEnemy.update` a `worldX`. La **2.8.3** rende `BeeMenuScene` un menu configurabile. La **2.8.2** sistema `BeeEnemyShooter`. La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
 
 ## 📁 Struttura del Progetto Aggiornata
 
@@ -271,6 +271,18 @@ Rettangolo o texture. La solidità **non** vive sulla classe: la scena fa `colli
 
 Demo: apri `examples/platform.html` (WASD / frecce, spazio per saltare).
 
+## 🧍 BeePlayer — platformer / free, non un sasso senza input
+
+Senza `input` la fisica gira lo stesso (`integrate`, gravità, figli). Solo `destroyed` / `!active` escono. `setMode('free')` mette `gravity = 0`; `setMode('platformer')` la rimette a 500. Non assegnare `this.mode` a mano.
+
+`consumeAttack()` legge e spegne `wantsAttack` (X/J). Chiamalo in **`scene.lateUpdate`** (dopo il tick entity dello stesso frame), non in `scene.update`. `boostJump` è permanente; `boostJumpTemporary` copre e allo scadere torna al permanente, non a `baseJumpForce` secco. In prefab `mode: 'free'` vince su un eventuale `gravity` nella stessa ricetta (`setMode` è applicato dopo).
+
+`draw` avvolge sprite/texture/rettangolo in `save`/`restore`.
+
+Limiti d'uso (non bug): `takeDamage` non ha invulnerabilità; il salto in platformer funziona se `collisions.run()` gira **prima** dell'update entity (come la demo); `potenziaSalto*` sono solo alias.
+
+Demo: `examples/player.html` — F cambia modalità, X attacca.
+
 ## 🔫 BeeEnemyShooter — rimbalzo clampato, non flip del segno
 
 `update` esce se `destroyed` / `!active`. Rimbalza su `worldX`/`worldY` dentro `setBounds` (se manca, il canvas). Oltre il bordo: clamp + `Math.abs` sulla velocità — niente jitter. Il moto è `vx`/`vy`; `speed` resta 0 così il patrol locale di `BeeEnemy` non si somma.
@@ -366,6 +378,7 @@ Il manager è l’unico owner del **tick** entity. Il **disegno** delle entity �
 | --- | --- |
 | `add(name, scene)` | registra; `add(null)` lancia |
 | `change(name, data)` | replace + restart; `change` dentro `update` slitta le entity al frame dopo |
+| `scene.lateUpdate` | dopo il tick entity dello stesso frame (`consumeAttack`, reazioni) |
 | `remove(name)` | sweep + toglie dalla Map |
 | `persistEntities: true` | uscire non distrugge le entity |
 | `gioco.addEntity` | se c’è una scena corrente, va lì, non in `engine.entities` |

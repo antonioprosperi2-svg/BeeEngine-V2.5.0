@@ -119,6 +119,9 @@ export class BeeSceneManager {
 
         if (dt <= 0) return;
         this.#tickEntities(dt, input ?? this.engine.input);
+        if (this.currentScene && typeof this.currentScene.lateUpdate === 'function') {
+            this.currentScene.lateUpdate(dt, input ?? this.engine.input, this.engine);
+        }
     }
 
     drawWorld(ctx = this.ctx) {
