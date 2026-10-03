@@ -2121,6 +2121,32 @@ export declare class BeeAudioMixer {
   destroy(): this;
 }
 
+export interface BeePlugin {
+  attach?(engine: BeeEngine): unknown;
+  detach?(): unknown;
+}
+
+export interface BeeLocaleOptions {
+  strings?: Record<string, Record<string, string>>;
+  language?: string;
+  fallback?: string;
+  engine?: BeeEngine;
+}
+
+export declare class BeeLocale implements BeePlugin {
+  strings: Record<string, Record<string, string>>;
+  language: string;
+  fallback: string;
+  engine: BeeEngine | null;
+
+  constructor(options?: BeeLocaleOptions);
+  attach(engine: BeeEngine): this;
+  detach(): this;
+  setLanguage(lang: string): this;
+  t(key: string): string;
+  get(key: string): string;
+}
+
 export declare class BeeEngine {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
@@ -2148,6 +2174,7 @@ export declare class BeeEngine {
   grid: BeeGrid | null;
   currentScene: BeeScene | null;
   events: Record<string, BeeEventCallback[]>;
+  plugins: Map<string, BeePlugin>;
   isRunning: boolean;
   isPaused: boolean;
   animationFrameId: number | null;
@@ -2183,6 +2210,11 @@ export declare class BeeEngine {
   timeline(options?: BeeTimelineOptions): BeeTimeline;
   stop(): void;
   destroy(): void;
+  registerPlugin(name: string, plugin: BeePlugin): this;
+  unregisterPlugin(name: string): this;
+  plugin(name: string): BeePlugin | null;
+  onTick(fn: (time: BeeTime, engine: BeeEngine) => void): () => void;
+  offTick(fn: (time: BeeTime, engine: BeeEngine) => void): this;
 
   createPool<T = any>(name: string, options: BeePoolOptions<T> | BeePool<T>): BeePool<T>;
   pool<T = any>(name: string): BeePool<T> | null;

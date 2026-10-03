@@ -1,8 +1,8 @@
 ![BeeEngine](https://raw.githubusercontent.com/antonioprosperi2-svg/BeeEngine-V2.0/main/Gemini_Generated_Image_pz9goopz9goopz9g.jpg)
-# 🐝 Motore di gioco 2D BeeEngine (v2.8.6 Professional)
+# 🐝 Motore di gioco 2D BeeEngine (v2.9.0 Professional)
 
 BeeEngine è un motore di gioco 2D leggero, modulare e altamente ottimizzato scritto in puro JavaScript moderno (ES Modules) per HTML5 Canvas.
-La **2.8.6** sistema `BeePlayer` (fisica senza input, `setMode`, `consumeAttack`, boost permanente vs temporaneo). La **2.8.5** allinea `BeePlatform.draw`. La **2.8.4** allinea `BeeEnemy.update` a `worldX`. La **2.8.3** rende `BeeMenuScene` un menu configurabile. La **2.8.2** sistema `BeeEnemyShooter`. La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
+La **2.9.0** apre i plugin: registro cieco + `BeeLocale`. La **2.8.6** sistema `BeePlayer`. La **2.8.5** allinea `BeePlatform.draw`. La **2.8.4** allinea `BeeEnemy.update` a `worldX`. La **2.8.3** rende `BeeMenuScene` un menu configurabile. La **2.8.2** sistema `BeeEnemyShooter`. La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
 
 ## 📁 Struttura del Progetto Aggiornata
 
@@ -27,6 +27,7 @@ BeeEngine-V2.8/
     ├── input/                  # Tastiera, mouse, joystick, touch, button
     ├── ui/                     # BeeUI: Control, panel, stack, label, button, nine-slice
     ├── physics/                # BeeSpatialHash, BeePhysicsWorld, BeeRigidBody, AABB groups
+    ├── plugins/                # contratto + BeeLocale (il motore non importa questi file)
     └── debug/                  # BeeLadybug: overlay e hitbox
 ```
 
@@ -351,22 +352,30 @@ Tab / Shift+Tab, frecce (o WASD), Enter/Space, D-pad e A del gamepad. Focus con 
 
 Limite: non è HTML/DOM. Niente input text nativo, scroll view o flex wrap — quelli sono plugin.
 
-## 🔌 Plugin (bozza, dopo il core 2.8)
+## 🔌 Plugin — registro cieco (2.9.0)
 
-Il nucleo è chiuso. Queste non sono classi obbligatorie del motore: si aggiungono quando serve un genere.
+Il motore **non importa** i plugin. Contratto in `src/plugins/PLUGIN_CONTRACT.md`: `attach` / `detach`, `registerPlugin` / `unregisterPlugin`. Se serve un frame: `engine.onTick(fn)`, mai `loop()` né sovrascrivere `update`.
 
-| Plugin | A cosa serve | Non è |
-| --- | --- | --- |
-| **BeeLight** | luci 2D, ombre, occlusion cheap | un secondo renderer |
-| **BeeDialogue** | albero dialoghi, speaker, scelte | `BeeText.drawHUD` |
-| **BeeInventory** | slot, stack, use/equip | un array `items[]` in scena |
-| **BeeQuest** | obiettivi, flag, ricompense | `if (score > 10)` |
-| **BeeNet** | sync posa / spawn, lockstep o snapshot | un server di gioco intero |
-| **BeePost** | fade, flash, shake, palette | WebGL obbligatorio |
-| **BeeLocale** | stringhe per lingua, fallback | hardcode nei `fillText` |
-| **BeeSpine** (o atlas) | scheletro 2D opzionale | sostituire `BeeSprite` |
+```javascript
+import { BeeEngine } from 'beeengine';
+import { BeeLocale } from 'beeengine/plugins';
 
-Regola: un plugin legge `gioco.time` / `gioco.ui` / `gioco.prefabs`, non rimpiazza il loop. Si parla di questi uno alla volta, come le classi del core.
+const gioco = new BeeEngine('testCanvas', 800, 600);
+const locale = new BeeLocale({
+    language: 'it',
+    fallback: 'en',
+    strings: {
+        it: { play: 'Gioca' },
+        en: { play: 'Play', hint: 'Press start' }
+    }
+});
+locale.attach(gioco);
+locale.t('play');   // Gioca
+locale.t('hint');   // Press start (fallback)
+locale.t('ghost');  // ghost (chiave visibile, non "")
+```
+
+`BeeLocale` è pura lettura. Chi disegna chiama `t(key)`. Prossimi (uno alla volta): Light, Dialogue, Inventory, Quest, Net, Post, Spine.
 
 ## 🎬 BeeSceneManager — replace, non stack
 

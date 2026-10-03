@@ -82,6 +82,8 @@ import { BeeMenuScene } from './src/gameplay/BeeMenuScene.js';
 const BeeNemico = BeeEnemy;
 
 export class BeeEngine {
+    #tickHooks;
+
     constructor(canvasId, width = 800, height = 600) {
         this.canvas = typeof canvasId === 'string' ? document.getElementById(canvasId) : canvasId;
         if (!this.canvas) {
@@ -124,6 +126,8 @@ export class BeeEngine {
         this.grid = null;
         this.currentScene = null;
         this.events = {};
+        this.plugins = new Map();
+        this.#tickHooks = [];
 
         this.isRunning = false;
         this.animationFrameId = null;
@@ -331,6 +335,42 @@ export class BeeEngine {
         return { ...(durationOrOptions || {}), clock: this.tweens };
     }
 
+    registerPlugin(name, plugin) {
+        const id = String(name ?? '');
+        if (!id) throw new Error('BeeEngine.registerPlugin: name required');
+        if (!plugin) throw new Error('BeeEngine.registerPlugin: plugin required');
+        this.plugins.set(id, plugin);
+        return this;
+    }
+
+    unregisterPlugin(name) {
+        this.plugins.delete(String(name ?? ''));
+        return this;
+    }
+
+    plugin(name) {
+        return this.plugins.get(String(name ?? '')) || null;
+    }
+
+    onTick(fn) {
+        if (typeof fn !== 'function') return () => {};
+        this.#tickHooks.push(fn);
+        return () => this.offTick(fn);
+    }
+
+    offTick(fn) {
+        const index = this.#tickHooks.indexOf(fn);
+        if (index >= 0) this.#tickHooks.splice(index, 1);
+        return this;
+    }
+
+    #runTickHooks() {
+        const hooks = this.#tickHooks;
+        for (let i = 0; i < hooks.length; i++) {
+            hooks[i](this.time, this);
+        }
+    }
+
     enableLadybug(options = {}) {
         this.debug.configure(options).attach().show();
         return this.debug;
@@ -383,6 +423,14 @@ export class BeeEngine {
             this.pools.clear();
         }
         this.bullets = null;
+
+        const names = [...this.plugins.keys()];
+        for (let i = 0; i < names.length; i++) {
+            const plug = this.plugins.get(names[i]);
+            if (plug && typeof plug.detach === 'function') plug.detach();
+            else this.plugins.delete(names[i]);
+        }
+        this.#tickHooks.length = 0;
     }
 
     createPool(name, options) {
@@ -434,6 +482,7 @@ export class BeeEngine {
         this.timers.tick(this.time);
         this.tweens.tick(this.time);
         this.audio.update(this.time);
+        this.#runTickHooks();
         const dt = this.time.dt;
 
         if (!this.time.paused) {
