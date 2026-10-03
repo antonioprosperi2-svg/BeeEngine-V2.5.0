@@ -1803,7 +1803,7 @@ export declare class BeeAnimatedSprite {
     }
   );
 
-  play(name: string, options?: { restart?: boolean }): this;
+  play(name: string, options?: { restart?: boolean; loop?: boolean }): this;
   update(dt: number): this;
   draw(ctx: CanvasRenderingContext2D, x: number, y: number, options?: { width?: number; height?: number }): void;
 }

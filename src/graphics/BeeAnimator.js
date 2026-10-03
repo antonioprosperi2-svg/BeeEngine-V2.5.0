@@ -245,7 +245,7 @@ export class BeeAnimator {
         if (!options.keepQueue) this.#queued = null;
 
         if (this.sprite && typeof this.sprite.play === 'function') {
-            this.sprite.play(next.clip, { restart: true });
+            this.sprite.play(next.clip, { restart: true, loop: next.loop });
         }
         if (next.onEnter) next.onEnter(this, prev);
     }

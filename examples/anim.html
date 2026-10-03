@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:,">
+    <title>BeeEngine — BeeAnimatedSprite demo</title>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #111;
+        }
+
+        canvas {
+            display: block;
+            margin: 20px auto;
+            background: #1c03f942;
+            border: 4px solid #ffd700;
+        }
+
+        a {
+            color: #ffd700;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="testCanvas"></canvas>
+    <div id="controls" style="text-align:center; margin:10px; color:#ccc; font-family:monospace;">
+        Spazio = one-shot · X = attacco animator · H = hitch (dt enorme)
+        · <a href="./player.html">Player</a>
+        · <a href="../index.html">BeeUI</a>
+    </div>
+    <script type="module" src="./anim-demo.js"></script>
+</body>
+
+</html>

@@ -341,6 +341,8 @@ export class BeeEntity {
                 ? this.animatorContext()
                 : this;
             this.animator.update(dt, ctx);
+        } else if (this.sprite && typeof this.sprite.update === 'function') {
+            this.sprite.update(dt);
         }
 
         const kids = this.#children;

@@ -1,8 +1,8 @@
 ![BeeEngine](https://raw.githubusercontent.com/antonioprosperi2-svg/BeeEngine-V2.0/main/Gemini_Generated_Image_pz9goopz9goopz9g.jpg)
-# 🐝 Motore di gioco 2D BeeEngine (v2.9.0 Professional)
+# 🐝 Motore di gioco 2D BeeEngine (v2.9.1 Professional)
 
 BeeEngine è un motore di gioco 2D leggero, modulare e altamente ottimizzato scritto in puro JavaScript moderno (ES Modules) per HTML5 Canvas.
-La **2.9.0** apre i plugin: registro cieco + `BeeLocale`. La **2.8.6** sistema `BeePlayer`. La **2.8.5** allinea `BeePlatform.draw`. La **2.8.4** allinea `BeeEnemy.update` a `worldX`. La **2.8.3** rende `BeeMenuScene` un menu configurabile. La **2.8.2** sistema `BeeEnemyShooter`. La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
+La **2.9.1** allinea `BeeAnimatedSprite` all'Animator (loop, catch-up, draw). La **2.9.0** apre i plugin: registro cieco + `BeeLocale`. La **2.8.6** sistema `BeePlayer`. La **2.8.5** allinea `BeePlatform.draw`. La **2.8.4** allinea `BeeEnemy.update` a `worldX`. La **2.8.3** rende `BeeMenuScene` un menu configurabile. La **2.8.2** sistema `BeeEnemyShooter`. La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
 
 ## 📁 Struttura del Progetto Aggiornata
 
@@ -97,7 +97,9 @@ One-shot: lo stato `finished` si imposta **prima** della callback. Loop: catch-u
 
 ## 🎬 BeeAnimator — il grafo, non il clip
 
-`BeeAnimatedSprite` riproduce un clip. `BeeAnimator` decide **quale** e **quando**: idle → run → jump, priorità, lock del colpo. Lo sprite resta il renderer. `entity.animator` viene tickato nel loop entity (dt di simulazione: in pausa il clip si ferma).
+`BeeAnimatedSprite` riproduce un clip. `BeeAnimator` decide **quale** e **quando**: idle → run → jump, priorità, lock del colpo. Lo sprite resta il renderer. `entity.animator` viene tickato nel loop entity (dt di simulazione: in pausa il clip si ferma). Senza animator, `BeeEntity.update` ticka `entity.sprite` — niente primo frame eterno, niente doppio update se l'animator c'è.
+
+L'Animator è fonte di verità sul loop: `#enter` chiama `sprite.play(clip, { restart: true, loop: next.loop })`. `play` con `loop` booleano sovrascrive `anim.loop` solo per quel play; senza opzione resta il clip. One-shot: ultimo frame + `finished: true`, il timer non accumula. `dt` enorme: al massimo 4 frame di ritardo in `timer`, **un** avanzamento per `update`. `fps` 0 / non numerico cade su 8. `draw` esce se manca `ctx` o i frame, e `restore()` gira sempre.
 
 ```javascript
 const sprite = gioco.createAnimatedSprite(sheet, {
@@ -129,7 +131,9 @@ actor.animator = animator;
 | `when('*', to, pred)` | da qualsiasi stato |
 | `play(name, { force })` | richiesta manuale; `force` rompe il lock |
 
-`BeeAnimatedSprite.play(name, { restart: true })` e `sprite.finished` esistono perché l'animator deve sapere quando l'attacco è chiuso. Versione pacchetto resta **2.7.0**: Animator, Tween, Timeline e Mixer escono insieme nel 2.8.
+`BeeAnimatedSprite.play(name, { restart: true, loop })` e `sprite.finished` esistono perché l'animator deve sapere quando l'attacco è chiuso. Clip inesistente: `console.warn`, clip invariato.
+
+Demo: `examples/anim.html` — spazio one-shot, X attacco (il loop dell'animator vince sul clip), H hitch. Test: `node scripts/test-beeanimatedsprite.mjs`.
 
 ## 🔊 BeeAudioMixer — bus, non cloneNode
 
