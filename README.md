@@ -7,7 +7,7 @@ La **2.9.1** allinea `BeeAnimatedSprite` all'Animator (loop, catch-up, draw). La
 ## 📁 Struttura del Progetto Aggiornata
 
 ```text
-BeeEngine-V2.8/
+BeeEngine-V2.9/
 ├── index.html                  # Punto di ingresso HTML e configurazione Canvas
 ├── index.js                    # Barrel ESM (re-export di BeeEngine.js)
 ├── main.js                     # Demo visiva (BeeUI: anchor, stack, focus, HUD)
