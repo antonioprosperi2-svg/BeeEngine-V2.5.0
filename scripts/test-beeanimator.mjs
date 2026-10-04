@@ -90,6 +90,25 @@ assert(animator.current === 'run', 'force breaks lock');
 }
 
 {
+    const edgeSprite = new BeeAnimatedSprite(sheet, {
+        animations: {
+            attack: { frames: [4, 5, 6, 7], fps: 10, loop: false },
+            hurt: { frames: [0, 1], fps: 10, loop: false }
+        }
+    });
+    const edgeCtx = { stun: false };
+    const edgeAnim = new BeeAnimator(edgeSprite)
+        .add('attack', { clip: 'attack', loop: false, lock: true, priority: 10, initial: true })
+        .add('hurt', { clip: 'hurt', priority: 0 })
+        .when('*', 'hurt', (c) => c.stun, { priority: 100 })
+        .start();
+    assert(edgeAnim.current === 'attack' && edgeAnim.locked === true, 'lock 10 attivo');
+    edgeCtx.stun = true;
+    edgeAnim.update(0.05, edgeCtx);
+    assert(edgeAnim.current === 'hurt', 'when score 100+0 interrompe lock 10 nello stesso update');
+}
+
+{
     let completeCalls = 0;
     const doneSprite = {
         finished: true,
@@ -107,10 +126,14 @@ assert(animator.current === 'run', 'force breaks lock');
     const warns = [];
     const orig = console.warn;
     console.warn = (msg) => { warns.push(String(msg)); };
+    let orphan;
     try {
-        const orphan = new BeeAnimator(null)
+        orphan = new BeeAnimator(null)
             .add('stuck', { lock: true, initial: true })
+            .add('idle', {})
+            .when('*', 'idle', () => true)
             .start();
+        assert(orphan.locked === false, 'senza sprite il lock non tiene');
         orphan.update(0.1, {});
         orphan.update(0.1, {});
     } finally {
@@ -121,6 +144,32 @@ assert(animator.current === 'run', 'force breaks lock');
         'lock senza sprite avvisa'
     );
     assert(warns.length === 1, 'warning una volta sola');
+    assert(orphan.current === 'idle', 'when esce dallo stato senza clip');
+}
+
+{
+    const warns = [];
+    const orig = console.warn;
+    console.warn = (msg) => { warns.push(String(msg)); };
+    let broken;
+    try {
+        const brokenSprite = new BeeAnimatedSprite(sheet, {
+            animations: {
+                idle: { frames: [0, 1], fps: 10, loop: true }
+            }
+        });
+        broken = new BeeAnimator(brokenSprite)
+            .add('missing', { clip: 'nope', lock: true, initial: true })
+            .add('idle', { clip: 'idle' })
+            .when('*', 'idle', () => true)
+            .start();
+        assert(broken.locked === false, 'play false non lascia lock eterno');
+        broken.update(0.05, {});
+    } finally {
+        console.warn = orig;
+    }
+    assert(warns.some((m) => m.includes('clip') || m.includes('nope')), 'play fallito avvisa');
+    assert(broken.current === 'idle', 'when esce dopo play false');
 }
 
 console.log('BeeAnimator tests ok');
