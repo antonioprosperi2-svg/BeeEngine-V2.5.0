@@ -25,9 +25,9 @@ export class BeeAnimatedSprite {
     play(name, options = {}) {
         if (!this.animations[name]) {
             console.warn(`BeeAnimatedSprite: clip "${name}" non esiste.`);
-            return this;
+            return false;
         }
-        if (this.currentAnimName === name && !options.restart) return this;
+        if (this.currentAnimName === name && !options.restart) return true;
         this.currentAnimName = name;
         this.currentFrameIndex = 0;
         this.timer = 0;
@@ -37,7 +37,7 @@ export class BeeAnimatedSprite {
         } else {
             this.#loopOverride = null;
         }
-        return this;
+        return true;
     }
 
     /**

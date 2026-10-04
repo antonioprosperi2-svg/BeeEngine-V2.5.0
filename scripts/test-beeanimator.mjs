@@ -70,4 +70,57 @@ assert(animator.current === 'attack' && animator.queued === 'run', 'low priority
 animator.set('run', { force: true });
 assert(animator.current === 'run', 'force breaks lock');
 
+{
+    const hurtSprite = new BeeAnimatedSprite(sheet, {
+        animations: {
+            attack: { frames: [4, 5, 6, 7], fps: 10, loop: false },
+            hurt: { frames: [0, 1], fps: 10, loop: false }
+        }
+    });
+    const hurtCtx = { stun: false };
+    const hurtAnim = new BeeAnimator(hurtSprite)
+        .add('attack', { clip: 'attack', loop: false, lock: true, initial: true })
+        .add('hurt', { clip: 'hurt', lock: true, priority: 10 })
+        .when('*', 'hurt', (c) => c.stun, { priority: 10 })
+        .start();
+    assert(hurtAnim.current === 'attack' && hurtAnim.locked === true, 'lock attivo');
+    hurtCtx.stun = true;
+    hurtAnim.update(0.05, hurtCtx);
+    assert(hurtAnim.current === 'hurt', 'when priority 10 interrompe il lock');
+}
+
+{
+    let completeCalls = 0;
+    const doneSprite = {
+        finished: true,
+        play() { return true; },
+        update() {}
+    };
+    const once = new BeeAnimator(doneSprite)
+        .add('slash', { clip: 'slash', loop: false, onComplete: () => { completeCalls += 1; } })
+        .start();
+    for (let i = 0; i < 5; i++) once.update(0.1, {});
+    assert(completeCalls === 1, `onComplete one-shot, ottenuto ${completeCalls}`);
+}
+
+{
+    const warns = [];
+    const orig = console.warn;
+    console.warn = (msg) => { warns.push(String(msg)); };
+    try {
+        const orphan = new BeeAnimator(null)
+            .add('stuck', { lock: true, initial: true })
+            .start();
+        orphan.update(0.1, {});
+        orphan.update(0.1, {});
+    } finally {
+        console.warn = orig;
+    }
+    assert(
+        warns.some((m) => m.includes('lock:true') && m.includes('sprite')),
+        'lock senza sprite avvisa'
+    );
+    assert(warns.length === 1, 'warning una volta sola');
+}
+
 console.log('BeeAnimator tests ok');

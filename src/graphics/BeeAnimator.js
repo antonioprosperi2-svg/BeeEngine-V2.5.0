@@ -167,11 +167,10 @@ export class BeeAnimator {
         if (!cur) return this;
 
         const finished = this.#clipFinished();
-        if (finished && cur.onComplete) {
-            cur.onComplete(this, ctx);
+        if (finished && !cur.__completedFired) {
+            cur.__completedFired = true;
+            if (cur.onComplete) cur.onComplete(this, ctx);
         }
-
-        if (cur.lock && !finished) return this;
 
         if (finished && (cur.lock || (!cur.loop && cur.exitTo))) {
             const next = this.#queued || cur.exitTo;
@@ -189,7 +188,13 @@ export class BeeAnimator {
 
     #clipFinished() {
         const sprite = this.sprite;
-        if (!sprite) return false;
+        if (!sprite) {
+            if (this.#current && this.#current.lock && !this.#current.__noSpriteWarned) {
+                this.#current.__noSpriteWarned = true;
+                console.warn(`BeeAnimator: stato "${this.#current.name}" ha lock:true ma non c'è nessuno sprite collegato — resterà bloccato per sempre.`);
+            }
+            return false;
+        }
         return sprite.finished === true;
     }
 
@@ -241,11 +246,15 @@ export class BeeAnimator {
 
         if (prev && prev.onExit) prev.onExit(this, next);
         this.#current = next;
+        next.__completedFired = false;
         this.#timeInState = 0;
         if (!options.keepQueue) this.#queued = null;
 
         if (this.sprite && typeof this.sprite.play === 'function') {
-            this.sprite.play(next.clip, { restart: true, loop: next.loop });
+            const ok = this.sprite.play(next.clip, { restart: true, loop: next.loop });
+            if (ok === false && next.lock) {
+                console.warn(`BeeAnimator: "${next.name}" è lock:true ma la clip non è partita — resterà bloccato per sempre.`);
+            }
         }
         if (next.onEnter) next.onEnter(this, prev);
     }

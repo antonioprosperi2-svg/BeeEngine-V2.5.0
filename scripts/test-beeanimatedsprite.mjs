@@ -56,11 +56,13 @@ function makeSprite() {
     const warns = [];
     const orig = console.warn;
     console.warn = (msg) => { warns.push(String(msg)); };
+    let result;
     try {
-        sprite.play('nope');
+        result = sprite.play('nope');
     } finally {
         console.warn = orig;
     }
+    assert(result === false, 'play nome sbagliato ritorna false');
     assert(warns.some((m) => m.includes('nope')), 'play nome sbagliato avvisa');
     assert(sprite.clip === 'idle', 'clip invariato');
 }

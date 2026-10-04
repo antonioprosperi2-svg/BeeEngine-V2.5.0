@@ -86,7 +86,16 @@ const scene = {
         });
         const animator = new BeeAnimator(fightSprite)
             .add('idle', { clip: 'idle', initial: true })
-            .add('poke', { clip: 'poke', loop: false, lock: true, priority: 10, exitTo: 'idle' })
+            .add('poke', {
+                clip: 'poke',
+                loop: false,
+                lock: true,
+                priority: 10,
+                exitTo: 'idle',
+                onEnter: () => {
+                    if (this.fighter && 'wantsAttack' in this.fighter) this.fighter.wantsAttack = false;
+                }
+            })
             .when('*', 'poke', (actor) => actor.wantsAttack)
             .start();
         this.fighter = new DemoActor(560, 220, fightSprite, animator);
@@ -101,8 +110,6 @@ const scene = {
         }
         if (input && input.wasPressed('KeyX')) {
             this.fighter.wantsAttack = true;
-        } else if (this.fighter) {
-            this.fighter.wantsAttack = false;
         }
         if (input && input.wasPressed('KeyH')) {
             const before = this.walker.sprite.currentFrameIndex;

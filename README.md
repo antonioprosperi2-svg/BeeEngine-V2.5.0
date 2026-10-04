@@ -1,8 +1,8 @@
 ![BeeEngine](https://raw.githubusercontent.com/antonioprosperi2-svg/BeeEngine-V2.0/main/Gemini_Generated_Image_pz9goopz9goopz9g.jpg)
-# 🐝 Motore di gioco 2D BeeEngine (v2.9.1 Professional)
+# 🐝 Motore di gioco 2D BeeEngine (v2.9.2 Professional)
 
 BeeEngine è un motore di gioco 2D leggero, modulare e altamente ottimizzato scritto in puro JavaScript moderno (ES Modules) per HTML5 Canvas.
-La **2.9.1** allinea `BeeAnimatedSprite` all'Animator (loop, catch-up, draw). La **2.9.0** apre i plugin: registro cieco + `BeeLocale`. La **2.8.6** sistema `BeePlayer`. La **2.8.5** allinea `BeePlatform.draw`. La **2.8.4** allinea `BeeEnemy.update` a `worldX`. La **2.8.3** rende `BeeMenuScene` un menu configurabile. La **2.8.2** sistema `BeeEnemyShooter`. La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
+La **2.9.2** lascia `#pick` decidere durante il lock (coda o interrupt). La **2.9.1** allinea `BeeAnimatedSprite` all'Animator (loop, catch-up, draw). La **2.9.0** apre i plugin: registro cieco + `BeeLocale`. La **2.8.6** sistema `BeePlayer`. La **2.8.5** allinea `BeePlatform.draw`. La **2.8.4** allinea `BeeEnemy.update` a `worldX`. La **2.8.3** rende `BeeMenuScene` un menu configurabile. La **2.8.2** sistema `BeeEnemyShooter`. La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
 
 ## 📁 Struttura del Progetto Aggiornata
 
@@ -126,14 +126,17 @@ actor.animator = animator;
 
 | Contratto | Significato |
 | --- | --- |
-| `lock` | finché il clip non è `finished`, gli stati con priorità ≤ non interrompono (vanno in coda) |
+| `lock` | finché il clip non è `finished`, gli **stati** con priorità ≤ non interrompono (vanno in coda). `#pick` gira anche sotto lock: priorità alta interrompe, bassa accoda |
 | `exitTo` | dove andare a clip finito (one-shot / lock) |
 | `when('*', to, pred)` | da qualsiasi stato |
 | `play(name, { force })` | richiesta manuale; `force` rompe il lock |
+| `onComplete` | una volta per ingresso nello stato, non ogni frame con `finished` |
 
-`BeeAnimatedSprite.play(name, { restart: true, loop })` e `sprite.finished` esistono perché l'animator deve sapere quando l'attacco è chiuso. Clip inesistente: `console.warn`, clip invariato.
+`BeeAnimatedSprite.play` ritorna `true`/`false` (clip assente: `false` + `console.warn`). Se uno stato `lock:true` parte senza sprite, o `play` fallisce, l'Animator avvisa: resta bloccato, non è un unlock silenzioso.
 
-Demo: `examples/anim.html` — spazio one-shot, X attacco (il loop dell'animator vince sul clip), H hitch. Test: `node scripts/test-beeanimatedsprite.mjs`.
+Scelte di design (non bug): il primo `add()` è `initial` di default; `#queued` è uno slot solo; `set()` / `when()` su nomi sbagliati o stati non ancora registrati restano silenziosi.
+
+Demo: `examples/anim.html` — spazio one-shot, X attacco (`wantsAttack` si spegne in `onEnter`, come `consumeAttack`), H hitch. Test: `node scripts/test-beeanimator.mjs` e `node scripts/test-beeanimatedsprite.mjs`.
 
 ## 🔊 BeeAudioMixer — bus, non cloneNode
 
