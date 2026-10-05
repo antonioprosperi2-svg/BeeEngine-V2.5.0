@@ -1,5 +1,6 @@
 import { BeeEngine } from '../BeeEngine.js';
 import { BeeEntity } from '../src/core/BeeEntity.js';
+import { BeeCamera } from '../src/graphics/BeeCamera.js';
 
 function assert(condition, message) {
     if (!condition) throw new Error(message);
@@ -114,6 +115,19 @@ const win = installDom();
     assert(pooled.inUse === 0, 'setScene rilascia il pooled (stesso branching di destroy)');
     assert(engine.entities.length === 0, 'lista svuotata dopo pooled');
 
+    engine.destroy();
+}
+
+{
+    const canvas = fakeCanvas();
+    const engine = new BeeEngine(canvas, 800, 600);
+    engine.camera = new BeeCamera(800, 600);
+    engine.enableAutoResize(800, 600);
+    assert(engine.camera.w === 800 && engine.camera.h === 600, 'auto-resize CSS non cambia il view');
+    canvas.width = 1024;
+    canvas.height = 768;
+    engine.enableAutoResize(800, 600);
+    assert(engine.camera.w === 1024 && engine.camera.h === 768, 'camera segue canvas.width/height');
     engine.destroy();
 }
 

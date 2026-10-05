@@ -81,4 +81,46 @@ function almost(a, b, eps = 1e-6) {
     assert(cam.setSize(640, 360).w === 640 && cam.h === 360, 'setSize');
 }
 
+{
+    const cam = new BeeCamera(800, 600);
+    cam.x = 40.4;
+    cam.y = 10.6;
+    const world = cam.screenToWorld(8, 4);
+    assert(world.x === 8 + Math.round(40.4) && world.y === 4 + Math.round(10.6), 'screenToWorld = apply');
+    const screen = cam.worldToScreen(world.x, world.y);
+    assert(screen.x === 8 && screen.y === 4, 'worldToScreen inverso');
+}
+
+{
+    const cam = new BeeCamera(800, 600);
+    cam.follow({ x: 800, y: 0 }, 0.1);
+    cam.host(true);
+    cam.update(1 / 60);
+    assert(cam.x === 0, 'hosted: update a mano è no-op');
+    cam.update(1 / 60, true);
+    assert(cam.x !== 0, 'hosted: il loop (fromHost) muove');
+}
+
+{
+    const cam = new BeeCamera(800, 600);
+    cam.follow({ x: 100, y: 0 }, 0);
+    cam.update(1);
+    cam.follow(null);
+    const x = cam.x;
+    cam.update(1);
+    assert(cam.x === x, 'follow(null) ferma');
+    cam.follow({ x: 999, y: 0, destroyed: true }, 0);
+    cam.update(1);
+    assert(cam.x === x, 'target destroyed non muove');
+}
+
+{
+    const cam = new BeeCamera(200, 100);
+    cam.setBounds(0, 0, 1000, 1000);
+    cam.x = 800;
+    cam.y = 0;
+    cam.setSize(400, 100);
+    assert(cam.x === 600, `setSize re-clamp x, ottenuto ${cam.x}`);
+}
+
 console.log('BeeCamera tests ok');

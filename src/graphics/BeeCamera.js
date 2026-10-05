@@ -10,13 +10,17 @@ export class BeeCamera {
         this.bounds = null;
         this.target = null;
         this.smooth = 0.1;
+        this.#hosted = false;
     }
+
+    #hosted;
 
     setSize(width, height) {
         const w = Number(width);
         const h = Number(height);
         if (Number.isFinite(w) && w > 0) this.w = w;
         if (Number.isFinite(h) && h > 0) this.h = h;
+        this.#clampToBounds();
         return this;
     }
 
@@ -47,10 +51,20 @@ export class BeeCamera {
     }
 
     /**
-     * @param {number} dt tempo di simulazione (scalato). In pausa è 0: la camera si ferma.
+     * @param {boolean} on true se questa è `gioco.camera` (il loop chiama update).
      */
-    update(dt) {
-        if (!this.target) return this;
+    host(on) {
+        this.#hosted = !!on;
+        return this;
+    }
+
+    /**
+     * @param {number} dt tempo di simulazione (scalato). In pausa è 0: la camera si ferma.
+     * @param {boolean} [fromHost] true solo dal loop del motore. Se la camera è hosted, un update a mano è no-op.
+     */
+    update(dt, fromHost = false) {
+        if (this.#hosted && fromHost !== true) return this;
+        if (!this.target || this.target.destroyed === true) return this;
         const step = Number(dt);
         if (!(step > 0)) return this;
 
@@ -100,6 +114,20 @@ export class BeeCamera {
             y < vy + this.h &&
             y + height > vy
         );
+    }
+
+    screenToWorld(sx, sy) {
+        return {
+            x: Number(sx) + Math.round(this.x),
+            y: Number(sy) + Math.round(this.y)
+        };
+    }
+
+    worldToScreen(wx, wy) {
+        return {
+            x: Number(wx) - Math.round(this.x),
+            y: Number(wy) - Math.round(this.y)
+        };
     }
 
     #focus() {

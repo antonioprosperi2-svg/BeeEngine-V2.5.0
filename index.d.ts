@@ -369,10 +369,13 @@ export declare class BeeCamera {
     target: BeeCamera["target"],
     smooth?: number
   ): this;
-  update(dt: number): this;
+  host(on: boolean): this;
+  update(dt: number, fromHost?: boolean): this;
   apply(ctx?: CanvasRenderingContext2D | null): this;
   getViewBounds(): BeeRect;
   isRectVisible(x: number, y: number, width: number, height: number): boolean;
+  screenToWorld(sx: number, sy: number): { x: number; y: number };
+  worldToScreen(wx: number, wy: number): { x: number; y: number };
 }
 
 // ---------------------------------------------------------------------------
@@ -2247,6 +2250,7 @@ export declare class BeeEngine {
     sprite?: BeeAnimator["sprite"],
     options?: { context?: () => unknown }
   ): BeeAnimator;
+  createCamera(width?: number, height?: number): BeeCamera;
 
   start(
     updateCallback?: BeeGameLoopCallback,

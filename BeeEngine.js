@@ -83,6 +83,7 @@ const BeeNemico = BeeEnemy;
 
 export class BeeEngine {
     #tickHooks;
+    #cameraHost;
 
     constructor(canvasId, width = 800, height = 600) {
         this.canvas = typeof canvasId === 'string' ? document.getElementById(canvasId) : canvasId;
@@ -123,6 +124,7 @@ export class BeeEngine {
         this.debug = new BeeLadybug(this);
         this.debug.attach();
         this.camera = null;
+        this.#cameraHost = null;
         this.grid = null;
         this.currentScene = null;
         this.events = {};
@@ -200,6 +202,15 @@ export class BeeEngine {
         return new BeeAnimator(sprite, options);
     }
 
+    createCamera(width, height) {
+        const cam = new BeeCamera(
+            width ?? this.canvas.width,
+            height ?? this.canvas.height
+        );
+        this.camera = cam;
+        return cam;
+    }
+
     enableAutoResize(baseWidth = this.canvas.width, baseHeight = this.canvas.height, reservedHeight = 0) {
         if (this._resizeHandler) {
             window.removeEventListener('resize', this._resizeHandler);
@@ -226,6 +237,7 @@ export class BeeEngine {
 
             this.canvas.style.width = `${newWidth}px`;
             this.canvas.style.height = `${newHeight}px`;
+            this.#syncCameraSize();
         };
 
         window.addEventListener('resize', this._resizeHandler);
@@ -371,6 +383,33 @@ export class BeeEngine {
         }
     }
 
+    #syncCameraSize() {
+        const cam = this.camera;
+        if (!cam || typeof cam.setSize !== 'function') return;
+        cam.setSize(this.canvas.width, this.canvas.height);
+    }
+
+    #bindCameraHost() {
+        const cam = this.camera;
+        if (this.#cameraHost && this.#cameraHost !== cam && typeof this.#cameraHost.host === 'function') {
+            this.#cameraHost.host(false);
+        }
+        this.#cameraHost = cam || null;
+        if (cam && typeof cam.host === 'function') cam.host(true);
+    }
+
+    #prepareCamera(dt) {
+        this.#bindCameraHost();
+        const cam = this.camera;
+        if (!cam) return;
+
+        this.#syncCameraSize();
+
+        if (!this.time.paused && cam.target && typeof cam.update === 'function') {
+            cam.update(dt, true);
+        }
+    }
+
     enableLadybug(options = {}) {
         this.debug.configure(options).attach().show();
         return this.debug;
@@ -387,6 +426,10 @@ export class BeeEngine {
 
     destroy() {
         this.stop();
+        if (this.#cameraHost && typeof this.#cameraHost.host === 'function') {
+            this.#cameraHost.host(false);
+        }
+        this.#cameraHost = null;
         if (this.scenes && typeof this.scenes.destroy === 'function') {
             this.scenes.destroy();
         }
@@ -484,6 +527,7 @@ export class BeeEngine {
         this.audio.update(this.time);
         this.#runTickHooks();
         const dt = this.time.dt;
+        this.#bindCameraHost();
 
         if (!this.time.paused) {
             if (this.scenes) {
@@ -492,15 +536,13 @@ export class BeeEngine {
 
             this.updateEntities(dt, this.input);
             this.time.consumeFixedSteps((fixedDt) => this.physics.step(fixedDt));
-
-            if (this.camera && this.camera.target && typeof this.camera.update === 'function') {
-                this.camera.update(dt);
-            }
         }
 
         if (this.update) {
             this.update(dt, this.input, this.time);
         }
+
+        this.#prepareCamera(dt);
 
         this.ui.update(this.input);
 
