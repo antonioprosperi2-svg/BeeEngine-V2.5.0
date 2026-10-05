@@ -492,6 +492,10 @@ export class BeeEngine {
 
             this.updateEntities(dt, this.input);
             this.time.consumeFixedSteps((fixedDt) => this.physics.step(fixedDt));
+
+            if (this.camera && this.camera.target && typeof this.camera.update === 'function') {
+                this.camera.update(dt);
+            }
         }
 
         if (this.update) {

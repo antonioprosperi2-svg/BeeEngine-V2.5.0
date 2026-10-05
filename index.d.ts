@@ -358,12 +358,19 @@ export declare class BeeCamera {
   w: number;
   h: number;
   bounds: BeeCameraBounds | null;
+  target: BeeEntity | BeeRect | { x?: number; y?: number; worldX?: number; worldY?: number; width?: number; height?: number } | null;
+  smooth: number;
 
-  constructor(canvasWidth: number, canvasHeight: number);
+  constructor(canvasWidth?: number, canvasHeight?: number);
 
-  setBounds(x: number, y: number, width: number, height: number): void;
-  follow(target: BeeEntity | BeeRect, smooth?: number): void;
-  apply(ctx: CanvasRenderingContext2D): void;
+  setSize(width: number, height: number): this;
+  setBounds(x: number | null, y?: number, width?: number, height?: number): this;
+  follow(
+    target: BeeCamera["target"],
+    smooth?: number
+  ): this;
+  update(dt: number): this;
+  apply(ctx?: CanvasRenderingContext2D | null): this;
   getViewBounds(): BeeRect;
   isRectVisible(x: number, y: number, width: number, height: number): boolean;
 }
