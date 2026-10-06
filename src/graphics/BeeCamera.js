@@ -33,11 +33,11 @@ export class BeeCamera {
         const by = Number(y);
         const bw = Number(width);
         const bh = Number(height);
-        if (![bx, by, bw, bh].every(Number.isFinite)) {
-            this.bounds = null;
+        if (![bx, by, bw, bh].every(Number.isFinite) || bw < 0 || bh < 0) {
             return this;
         }
         this.bounds = { x: bx, y: by, width: bw, height: bh };
+        this.#clampToBounds();
         return this;
     }
 
@@ -59,14 +59,20 @@ export class BeeCamera {
     }
 
     /**
-     * @param {number} dt tempo di simulazione (scalato). In pausa è 0: la camera si ferma.
+     * @param {number} dt tempo di simulazione (scalato). In pausa è 0: non segue. I bounds si riallineano lo stesso.
      * @param {boolean} [fromHost] true solo dal loop del motore. Se la camera è hosted, un update a mano è no-op.
      */
     update(dt, fromHost = false) {
         if (this.#hosted && fromHost !== true) return this;
-        if (!this.target || this.target.destroyed === true) return this;
+        if (!this.target || this.target.destroyed === true) {
+            this.#clampToBounds();
+            return this;
+        }
         const step = Number(dt);
-        if (!(step > 0)) return this;
+        if (!(step > 0)) {
+            this.#clampToBounds();
+            return this;
+        }
 
         const aim = this.#focus();
         const s = this.smooth;
@@ -155,14 +161,29 @@ export class BeeCamera {
         if (b.width < this.w) {
             this.x = b.x + (b.width - this.w) / 2;
         } else {
-            this.x = Math.max(b.x, Math.min(this.x, b.x + b.width - this.w));
+            this.x = this.#clampViewOrigin(this.x, b.x, b.x + b.width - this.w);
         }
 
         if (b.height < this.h) {
             this.y = b.y + (b.height - this.h) / 2;
         } else {
-            this.y = Math.max(b.y, Math.min(this.y, b.y + b.height - this.h));
+            this.y = this.#clampViewOrigin(this.y, b.y, b.y + b.height - this.h);
         }
+    }
+
+    /**
+     * Tiene l'origine usata da apply (Math.round) dentro [min, max].
+     */
+    #clampViewOrigin(value, min, max) {
+        if (!(max >= min)) return min;
+        const x = Math.max(min, Math.min(value, max));
+        const rounded = Math.round(x);
+        if (rounded >= min && rounded <= max) return x;
+
+        const lo = Math.ceil(min);
+        const hi = Math.floor(max);
+        if (lo <= hi) return rounded < min ? lo : hi;
+        return Math.round((min + max) / 2);
     }
 }
 /** 🌟 * Classe BeeCamera: Gestisce l'inquadratura visiva e lo scorrimento del gioco.

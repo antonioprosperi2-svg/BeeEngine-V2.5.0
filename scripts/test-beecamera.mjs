@@ -123,4 +123,48 @@ function almost(a, b, eps = 1e-6) {
     assert(cam.x === 600, `setSize re-clamp x, ottenuto ${cam.x}`);
 }
 
+{
+    const cam = new BeeCamera(800, 600);
+    cam.setBounds(100, 50, 2000, 2000);
+    assert(cam.x === 100 && cam.y === 50, `setBounds tira dentro subito, ottenuto ${cam.x},${cam.y}`);
+    const kept = cam.bounds;
+    cam.setBounds(NaN, 0, 10, 10);
+    assert(cam.bounds === kept, 'valore non finito non cancella i bounds');
+    cam.setBounds(0, 0, -10, 100);
+    assert(cam.bounds === kept, 'lato negativo non cancella i bounds');
+}
+
+{
+    const narrow = new BeeCamera(800, 600);
+    narrow.setBounds(0, 0, 100, 80);
+    assert(narrow.x === (100 - 800) / 2, `bounds stretti centrati senza update, ottenuto ${narrow.x}`);
+    assert(narrow.y === (80 - 600) / 2, `bounds stretti y senza update, ottenuto ${narrow.y}`);
+}
+
+{
+    const cam = new BeeCamera(80, 60);
+    cam.x = 0.4;
+    cam.y = 20.6;
+    cam.setBounds(0.4, 0.4, 100.2, 80.2);
+    const maxX = 0.4 + 100.2 - 80;
+    const maxY = 0.4 + 80.2 - 60;
+    assert(Math.round(cam.x) >= 0.4 && Math.round(cam.x) <= maxX, `view x dentro i bounds, ottenuto ${cam.x}`);
+    assert(Math.round(cam.y) >= 0.4 && Math.round(cam.y) <= maxY, `view y dentro i bounds, ottenuto ${cam.y}`);
+    assert(cam.x === 1, `bordo sinistro frazionario, ottenuto ${cam.x}`);
+    assert(cam.y === 20, `bordo basso frazionario, ottenuto ${cam.y}`);
+}
+
+{
+    const cam = new BeeCamera(100, 100);
+    cam.setBounds(0, 0, 1000, 1000);
+    cam.x = 5000;
+    cam.y = 5000;
+    cam.update(0);
+    assert(cam.x === 900 && cam.y === 900, `dt 0 resta nei bounds, ottenuto ${cam.x},${cam.y}`);
+    cam.x = 5000;
+    cam.follow({ x: 0, y: 0, destroyed: true }, 0);
+    cam.update(1);
+    assert(cam.x === 900, `destroyed non segue ma resta nei bounds, ottenuto ${cam.x}`);
+}
+
 console.log('BeeCamera tests ok');

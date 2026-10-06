@@ -353,28 +353,59 @@ export interface BeeCameraBounds {
 }
 
 export declare class BeeCamera {
+  /** Origine mondo. `apply` usa `Math.round` di questo valore. */
   x: number;
+  /** Origine mondo. `apply` usa `Math.round` di questo valore. */
   y: number;
+  /** Larghezza view in pixel mondo. Default 800 se il costruttore riceve un valore non valido. */
   w: number;
+  /** Altezza view in pixel mondo. Default 600 se il costruttore riceve un valore non valido. */
   h: number;
+  /** Rettangolo mondo. `null` = nessun limite. */
   bounds: BeeCameraBounds | null;
-  target: BeeEntity | BeeRect | { x?: number; y?: number; worldX?: number; worldY?: number; width?: number; height?: number } | null;
+  target: BeeEntity | BeeRect | { x?: number; y?: number; worldX?: number; worldY?: number; width?: number; height?: number; destroyed?: boolean } | null;
+  /**
+   * Fattore di inseguimento.
+   * `<= 0` o `>= 1` aggancia subito (`follow(target, 0)` è lo snap).
+   * Tra 0 e 1 è un lerp sul `dt` (stesso feeling a 30 e 60 fps).
+   */
   smooth: number;
 
   constructor(canvasWidth?: number, canvasHeight?: number);
 
+  /** Aggiorna `w`/`h` solo se il numero è finito e `> 0`, poi riallinea ai bounds. */
   setSize(width: number, height: number): this;
+  /**
+   * Limiti mondo. `null` li toglie.
+   * Applica il clamp subito, anche senza target.
+   * Numero non finito o lato negativo: non cambia i bounds già impostati.
+   * `Math.round(x/y)` resta dentro il lato, come `apply`.
+   */
   setBounds(x: number | null, y?: number, width?: number, height?: number): this;
+  /**
+   * Tiene il bersaglio. Non muove da solo: ci pensa `update`.
+   * `null` smette di seguire. `smooth` omesso lascia il valore precedente.
+   */
   follow(
     target: BeeCamera["target"],
     smooth?: number
   ): this;
+  /** `true` se questa è `gioco.camera`: un `update` a mano diventa no-op. */
   host(on: boolean): this;
+  /**
+   * Un passo di inseguimento. `dt <= 0`, target assente o `destroyed`: non segue, ma riallinea ai bounds.
+   * Se è hosted, solo il loop (`fromHost === true`) la muove.
+   */
   update(dt: number, fromHost?: boolean): this;
+  /** Trasla il canvas di `-Math.round(x/y)`. Senza `ctx` esce. */
   apply(ctx?: CanvasRenderingContext2D | null): this;
+  /** Rettangolo visibile, stesso arrotondamento di `apply`. */
   getViewBounds(): BeeRect;
+  /** True se il rettangolo mondo interseca la view arrotondata. Lato `<= 0`: false. */
   isRectVisible(x: number, y: number, width: number, height: number): boolean;
+  /** Inverso di `apply`: schermo → mondo con lo stesso `Math.round`. */
   screenToWorld(sx: number, sy: number): { x: number; y: number };
+  /** Inverso di `screenToWorld`. */
   worldToScreen(wx: number, wy: number): { x: number; y: number };
 }
 

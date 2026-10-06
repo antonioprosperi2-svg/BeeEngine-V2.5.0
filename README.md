@@ -1,8 +1,8 @@
 ![BeeEngine](https://raw.githubusercontent.com/antonioprosperi2-svg/BeeEngine-V2.0/main/Gemini_Generated_Image_pz9goopz9goopz9g.jpg)
-# 🐝 Motore di gioco 2D BeeEngine (v2.9.4 Professional)
+# 🐝 Motore di gioco 2D BeeEngine (v2.9.5 Professional)
 
 BeeEngine è un motore di gioco 2D leggero, modulare e altamente ottimizzato scritto in puro JavaScript moderno (ES Modules) per HTML5 Canvas.
-La **2.9.4** sistema `BeeCamera` da usare (un tick, follow prima del tick, view = canvas). La **2.9.3** allinea `BeeCamera` a `dt` (snap, lerp, bounds, tick nel loop). La **2.9.2** lascia `#pick` decidere durante il lock (coda o interrupt). La **2.9.1** allinea `BeeAnimatedSprite` all'Animator (loop, catch-up, draw). La **2.9.0** apre i plugin: registro cieco + `BeeLocale`. La **2.8.6** sistema `BeePlayer`. La **2.8.5** allinea `BeePlatform.draw`. La **2.8.4** allinea `BeeEnemy.update` a `worldX`. La **2.8.3** rende `BeeMenuScene` un menu configurabile. La **2.8.2** sistema `BeeEnemyShooter`. La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
+La **2.9.5** chiude i bounds di `BeeCamera`: `setBounds` li applica subito, un valore non valido non cancella i limiti già messi, e `Math.round` di x/y non esce dal rettangolo. La **2.9.4** sistema `BeeCamera` da usare (un tick, follow prima del tick, view = canvas). La **2.9.3** allinea `BeeCamera` a `dt` (snap, lerp, bounds, tick nel loop). La **2.9.2** lascia `#pick` decidere durante il lock (coda o interrupt). La **2.9.1** allinea `BeeAnimatedSprite` all'Animator (loop, catch-up, draw). La **2.9.0** apre i plugin: registro cieco + `BeeLocale`. La **2.8.6** sistema `BeePlayer`. La **2.8.5** allinea `BeePlatform.draw`. La **2.8.4** allinea `BeeEnemy.update` a `worldX`. La **2.8.3** rende `BeeMenuScene` un menu configurabile. La **2.8.2** sistema `BeeEnemyShooter`. La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
 
 ## 📁 Struttura del Progetto Aggiornata
 
@@ -142,7 +142,7 @@ Demo: `examples/anim.html` — spazio one-shot, X attacco (`wantsAttack` si speg
 
 `follow(target)` **tiene** il bersaglio. Il loop, se è `gioco.camera` e c’è un target, chiama **una volta** `update(dt)` **dopo** scene / entity / `gioco.update` e **prima** di `apply`. Non chiamare `camera.update` a mano: due chiamate = due lerp. `follow` in `scene.update` (o una volta in `enter`) va bene. In `gioco.update` ora prende lo stesso frame; prima il tick stava prima e perdevi un frame.
 
-Centro: `worldX`/`worldY` se sono numeri, senno `x`/`y`. `width`/`height` mancanti valgono 0, non NaN. `smooth <= 0` o `>= 1` è snap. Tra 0 e 1 è lerp su `dt` (stesso feeling a 30 e 60 fps). `dt` 0 / pausa → camera ferma. Costruttore: w/h numerici, altrimenti 800×600. Target `destroyed` o `follow(null)`: non avanza.
+Centro: `worldX`/`worldY` se sono numeri, senno `x`/`y`. `width`/`height` mancanti valgono 0, non NaN. `smooth <= 0` o `>= 1` è snap (è il contratto: `follow(target, 0)` aggancia subito). Tra 0 e 1 è lerp su `dt` (stesso feeling a 30 e 60 fps). `dt` 0 / pausa → non segue il target; se x/y sono fuori dai bounds, li riporta sul bordo. Costruttore: w/h numerici, altrimenti 800×600. Target `destroyed` o `follow(null)`: non avanza, i bounds restano. `setBounds` clamp-a prima di tornare. Un numero non finito o un lato negativo non tocca i bounds già impostati (`setBounds(null)` li toglie).
 
 `enableAutoResize` scala solo il **CSS**. Il view è `canvas.width`/`height`; il motore allinea `camera.w`/`h` a quello (letterbox ≠ mondo più grande). `screenToWorld` / `worldToScreen` usano lo stesso `Math.round` di `apply`.
 
@@ -159,6 +159,8 @@ gioco.camera.follow(hero, 0.08); // scene.update o enter — niente camera.updat
 | `apply` senza `ctx` | esce, non lancia |
 | bounds più stretti del view | centra sul bounds, non inverte il clamp |
 | `setBounds(null)` | toglie i limiti |
+| `setBounds` con numeri non validi | non cambia i bounds (niente azzeramento) |
+| bordo dei bounds | `Math.round(x/y)` resta dentro il lato, come `apply` |
 | `getViewBounds` / `isRectVisible` | stesso `Math.round` di `apply` (niente sfasamento 1px con tilemap) |
 
 Niente zoom / shake / deadzone in questo giro. Test: `node scripts/test-beecamera.mjs`.
