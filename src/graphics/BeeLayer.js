@@ -159,8 +159,12 @@ export class BeeLayer {
         this.#seq = 0;
 
         const scene = engine && (engine.currentScene || (engine.scenes && engine.scenes.currentScene));
-        this.#walkList(scene && scene.entities, engine, null);
-        this.#walkList(engine && engine.entities, engine, null);
+        const sceneList = scene && scene.entities;
+        const engineList = engine && engine.entities;
+        this.#walkRoots(sceneList, engine);
+        this.#walkRoots(engineList, engine);
+        this.#walkOrphans(sceneList, engine);
+        this.#walkOrphans(engineList, engine);
 
         for (let i = 0; i < this.#order.length; i++) {
             const slot = this.#order[i];
@@ -194,14 +198,45 @@ export class BeeLayer {
         this.add(BEE_DRAW.UI, { space: BEE_SPACE.SCREEN, sort: 'stable', order: 100 });
     }
 
-    #walkList(list, engine, inherited) {
+    #walkRoots(list, engine) {
         if (!list || list.length === 0) return;
         for (let i = 0; i < list.length; i++) {
-            this.#visit(list[i], engine, inherited);
+            const entity = list[i];
+            if (!entity || entity.parent) continue;
+            this.#visit(entity, engine, null, false);
         }
     }
 
-    #visit(entity, engine, inherited) {
+    #walkOrphans(list, engine) {
+        if (!list || list.length === 0) return;
+        for (let i = 0; i < list.length; i++) {
+            const entity = list[i];
+            if (!entity || this.#seen.has(entity)) continue;
+            if (this.#hiddenAncestor(entity)) continue;
+            this.#visit(entity, engine, this.#inheritedLayer(entity), true);
+        }
+    }
+
+    #hiddenAncestor(entity) {
+        let node = entity.parent;
+        while (node) {
+            if (node.visible === false) return true;
+            node = node.parent;
+        }
+        return false;
+    }
+
+    #inheritedLayer(entity) {
+        let node = entity.parent;
+        while (node) {
+            const layer = node.drawLayer;
+            if (typeof layer === 'string' && layer) return layer;
+            node = node.parent;
+        }
+        return BEE_DRAW.WORLD;
+    }
+
+    #visit(entity, engine, inherited, asRoot) {
         if (!entity || entity.destroyed || this.#seen.has(entity)) return;
         this.#seen.add(entity);
         if (entity.visible === false) return;
@@ -209,7 +244,7 @@ export class BeeLayer {
         const explicit = typeof entity.drawLayer === 'string' && entity.drawLayer;
         const name = explicit || inherited || BEE_DRAW.WORLD;
         const slot = this.#slots.get(name) || this.#slots.get(BEE_DRAW.WORLD);
-        const isRoot = !entity.parent;
+        const isRoot = asRoot === true || !entity.parent;
         const split = !!(explicit && inherited && explicit !== inherited);
 
         if ((isRoot || split) && slot && slot.visible !== false) {

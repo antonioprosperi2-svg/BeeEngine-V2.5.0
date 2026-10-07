@@ -117,4 +117,153 @@ function mockEngine(entities) {
     assert(threw, 'add duplicato lancia');
 }
 
+function actor(name, layer) {
+    const entity = new BeeEntity(0, 0, 10, 10);
+    entity.name = name;
+    if (layer) entity.drawLayer = layer;
+    return entity;
+}
+
+function placed(layers) {
+    const out = {};
+    const slots = layers.list();
+    for (let i = 0; i < slots.length; i++) {
+        out[slots[i].name] = layers.items(slots[i].name).map((entity) => entity.name).join(',');
+    }
+    return out;
+}
+
+function paintLikeDrawEntity(entity, pass, seen) {
+    if (!entity || entity.visible === false || entity.destroyed) return;
+    if (seen.has(entity)) throw new Error('disegnata due volte: ' + entity.name);
+    seen.add(entity);
+    const kids = entity.children;
+    if (!kids || kids.length === 0) return;
+    for (let i = 0; i < kids.length; i++) {
+        const child = kids[i];
+        if (child && child.drawLayer && child.drawLayer !== pass) continue;
+        paintLikeDrawEntity(child, pass, seen);
+    }
+}
+
+function assertDrawnOnce(layers) {
+    const seen = new Set();
+    const slots = layers.list();
+    for (let i = 0; i < slots.length; i++) {
+        const batch = layers.items(slots[i].name);
+        for (let k = 0; k < batch.length; k++) {
+            paintLikeDrawEntity(batch[k], slots[i].name, seen);
+        }
+    }
+}
+
+function family() {
+    const padre = actor('padre');
+    const gun = actor('gun', BEE_DRAW.YSORT);
+    const hud = actor('hud', BEE_DRAW.UI);
+    padre.addChild(gun);
+    padre.addChild(hud);
+    return { padre, gun, hud };
+}
+
+{
+    const { padre, gun, hud } = family();
+    const forward = new BeeLayer();
+    forward.collect(mockEngine([padre, gun, hud]));
+    const back = new BeeLayer();
+    back.collect(mockEngine([hud, gun, padre]));
+    const expected = { background: '', world: 'padre', ysort: 'gun', ui: 'hud' };
+    assert(JSON.stringify(placed(forward)) === JSON.stringify(expected), 'padre prima: ' + JSON.stringify(placed(forward)));
+    assert(JSON.stringify(placed(back)) === JSON.stringify(placed(forward)), 'ordine lista invertito, stesso risultato');
+    assertDrawnOnce(forward);
+    assertDrawnOnce(back);
+}
+
+{
+    const { padre, gun, hud } = family();
+    const engine = mockEngine([gun, hud]);
+    void padre;
+    const layers = new BeeLayer();
+    layers.collect(engine);
+    const map = placed(layers);
+    assert(map.ysort === 'gun' && map.ui === 'hud' && map.world === '', 'padre assente: ' + JSON.stringify(map));
+    assertDrawnOnce(layers);
+}
+
+{
+    const { padre, gun, hud } = family();
+    const engine = mockEngine([padre]);
+    engine.currentScene = { entities: [gun, hud] };
+    const layers = new BeeLayer();
+    layers.collect(engine);
+    const map = placed(layers);
+    assert(map.world === 'padre' && map.ysort === 'gun' && map.ui === 'hud', 'figlio in scena, padre nel motore: ' + JSON.stringify(map));
+    assertDrawnOnce(layers);
+}
+
+{
+    const { padre } = family();
+    const engine = mockEngine([padre]);
+    engine.currentScene = { entities: [padre] };
+    const layers = new BeeLayer();
+    layers.collect(engine);
+    assert(layers.items(BEE_DRAW.WORLD).length === 1, 'stessa entità in scena e nel motore, una sola');
+    assert(layers.items(BEE_DRAW.YSORT).map((e) => e.name).join(',') === 'gun', 'gun raccolto una volta');
+    assertDrawnOnce(layers);
+}
+
+{
+    const { padre, hud } = family();
+    padre.visible = false;
+    const layers = new BeeLayer();
+    layers.collect(mockEngine([hud, padre]));
+    assert(layers.items(BEE_DRAW.UI).length === 0, 'padre invisibile spegne il figlio ui');
+    assert(layers.items(BEE_DRAW.WORLD).length === 0, 'padre invisibile non va nel bucket');
+    assertDrawnOnce(layers);
+}
+
+{
+    const padre = actor('padre', BEE_DRAW.YSORT);
+    const hat = actor('hat');
+    padre.addChild(hat);
+    const layers = new BeeLayer();
+    layers.collect(mockEngine([hat, padre]));
+    const ysort = layers.items(BEE_DRAW.YSORT).map((e) => e.name);
+    assert(ysort.join(',') === 'padre', 'figlio senza drawLayer non entra nel bucket: ' + ysort);
+    assertDrawnOnce(layers);
+}
+
+{
+    const layers = new BeeLayer();
+    assert(layers.get(BEE_DRAW.BACKGROUND).order === 0, 'background order 0');
+    assert(layers.get(BEE_DRAW.WORLD).order === 10, 'world order 10');
+    assert(layers.get(BEE_DRAW.YSORT).order === 20, 'ysort order 20');
+    assert(layers.get(BEE_DRAW.UI).order === 100, 'ui order 100');
+    assert(layers.get(BEE_DRAW.UI).space === BEE_SPACE.SCREEN, 'ui screen');
+
+    const ground = new BeeEntity(0, 100, 10, 40);
+    ground.name = 'ground';
+    ground.drawLayer = BEE_DRAW.YSORT;
+    ground.sortY = 0;
+    const sky = new BeeEntity(0, 10, 10, 10);
+    sky.name = 'sky';
+    sky.drawLayer = BEE_DRAW.YSORT;
+    layers.collect(mockEngine([ground, sky]));
+    assert(layers.items(BEE_DRAW.YSORT).map((e) => e.name).join(',') === 'ground,sky', 'sortY 0 è una chiave, non i piedi');
+
+    let empty = false;
+    try {
+        layers.add('');
+    } catch {
+        empty = true;
+    }
+    assert(empty, "add('') lancia");
+
+    layers.remove('assente');
+    assert(layers.has('assente') === false, 'remove di un nome assente non lancia');
+
+    const bare = new BeeLayer({ defaults: false });
+    assert(bare.list().length === 0, 'defaults:false non installa i pass');
+}
+
 console.log('BeeLayer tests ok');
