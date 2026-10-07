@@ -266,4 +266,67 @@ function family() {
     assert(bare.list().length === 0, 'defaults:false non installa i pass');
 }
 
+function paintedNames(layers) {
+    const seen = new Set();
+    const names = [];
+    const slots = layers.list();
+    for (let i = 0; i < slots.length; i++) {
+        const batch = layers.items(slots[i].name);
+        for (let k = 0; k < batch.length; k++) {
+            paintCollect(batch[k], slots[i].name, seen, names);
+        }
+    }
+    return names;
+}
+
+function paintCollect(entity, pass, seen, names) {
+    if (!entity || entity.visible === false || entity.destroyed) return;
+    if (seen.has(entity)) throw new Error('disegnata due volte: ' + entity.name);
+    seen.add(entity);
+    names.push(entity.name);
+    const kids = entity.children;
+    if (!kids || kids.length === 0) return;
+    for (let i = 0; i < kids.length; i++) {
+        const child = kids[i];
+        if (child && child.drawLayer && child.drawLayer !== pass) continue;
+        paintCollect(child, pass, seen, names);
+    }
+}
+
+{
+    const g = actor('G');
+    const p = actor('P');
+    const c = actor('C');
+    g.addChild(p);
+    p.addChild(c);
+    const childFirst = new BeeLayer();
+    childFirst.collect(mockEngine([c, p]));
+    const parentFirst = new BeeLayer();
+    parentFirst.collect(mockEngine([p, c]));
+    assert(placed(childFirst).world === 'P', 'solo P nel bucket, C prima: ' + JSON.stringify(placed(childFirst)));
+    assert(JSON.stringify(placed(childFirst)) === JSON.stringify(placed(parentFirst)), 'G fuori lista, [C, P] e [P, C] uguali');
+    const drawn = paintedNames(childFirst);
+    assert(drawn.filter((name) => name === 'C').length === 1, 'C disegnato una volta: ' + drawn);
+    assert(drawn.filter((name) => name === 'P').length === 1, 'P disegnato una volta: ' + drawn);
+    assertDrawnOnce(parentFirst);
+}
+
+{
+    const outsideParent = actor('P');
+    const outsideChild = actor('C');
+    outsideParent.addChild(outsideChild);
+    outsideParent.destroyed = true;
+    const outside = new BeeLayer();
+    outside.collect(mockEngine([outsideChild]));
+    assert(paintedNames(outside).length === 0, 'padre destroyed fuori lista, figlio non disegnato');
+
+    const insideParent = actor('P');
+    const insideChild = actor('C');
+    insideParent.addChild(insideChild);
+    insideParent.destroyed = true;
+    const inside = new BeeLayer();
+    inside.collect(mockEngine([insideChild, insideParent]));
+    assert(paintedNames(inside).length === 0, 'padre destroyed in lista, figlio non disegnato');
+}
+
 console.log('BeeLayer tests ok');

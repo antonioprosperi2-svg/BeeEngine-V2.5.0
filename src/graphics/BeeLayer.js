@@ -73,6 +73,7 @@ export class BeeLayer {
         this.#slots = new Map();
         this.#order = [];
         this.#seen = new Set();
+        this.#listed = new Set();
         this.#seq = 0;
         this.#adds = 0;
         this.#dirty = true;
@@ -83,6 +84,7 @@ export class BeeLayer {
     #slots;
     #order;
     #seen;
+    #listed;
     #seq;
     #adds;
     #dirty;
@@ -156,11 +158,14 @@ export class BeeLayer {
             this.#order[i].count = 0;
         }
         this.#seen.clear();
+        this.#listed.clear();
         this.#seq = 0;
 
         const scene = engine && (engine.currentScene || (engine.scenes && engine.scenes.currentScene));
         const sceneList = scene && scene.entities;
         const engineList = engine && engine.entities;
+        this.#fillListed(sceneList);
+        this.#fillListed(engineList);
         this.#walkRoots(sceneList, engine);
         this.#walkRoots(engineList, engine);
         this.#walkOrphans(sceneList, engine);
@@ -207,20 +212,39 @@ export class BeeLayer {
         }
     }
 
+    #fillListed(list) {
+        if (!list || list.length === 0) return;
+        for (let i = 0; i < list.length; i++) {
+            if (list[i]) this.#listed.add(list[i]);
+        }
+    }
+
     #walkOrphans(list, engine) {
         if (!list || list.length === 0) return;
         for (let i = 0; i < list.length; i++) {
             const entity = list[i];
             if (!entity || this.#seen.has(entity)) continue;
             if (this.#hiddenAncestor(entity)) continue;
-            this.#visit(entity, engine, this.#inheritedLayer(entity), true);
+            const root = this.#listedRoot(entity);
+            if (!root || this.#seen.has(root)) continue;
+            this.#visit(root, engine, this.#inheritedLayer(root), true);
         }
+    }
+
+    #listedRoot(entity) {
+        let top = entity;
+        let node = entity.parent;
+        while (node) {
+            if (this.#listed.has(node) && !this.#seen.has(node)) top = node;
+            node = node.parent;
+        }
+        return top;
     }
 
     #hiddenAncestor(entity) {
         let node = entity.parent;
         while (node) {
-            if (node.visible === false) return true;
+            if (node.visible === false || node.destroyed === true) return true;
             node = node.parent;
         }
         return false;
