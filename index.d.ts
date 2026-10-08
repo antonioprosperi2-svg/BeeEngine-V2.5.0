@@ -1041,8 +1041,13 @@ export declare class BeeParticleSystem extends BeeEntity {
 
   constructor(options?: { x?: number; y?: number; initial?: number; max?: number });
 
+  /** Rettangolo delle particelle vive (centro ± size). Senza particelle: width e height 0. */
+  getWorldAABB(): BeeRect;
+  /** `count` non finito o `<= 0`, oppure sistema `destroyed`: non acquisisce. */
   emit(count?: number, options?: BeeParticleEmitOptions): void;
+  /** `destroyed` o `!active`: esce. `dt` non finito o `<= 0`: non muove; i morti si possono compattare. */
   update(dt: number, input?: BeeInput, engine?: BeeEngine): void;
+  /** `maxLife <= 0`: alpha 0, non `life / maxLife`. */
   draw(ctx: CanvasRenderingContext2D): void;
 }
 

@@ -27,6 +27,7 @@ export class BeeParticleSystem extends BeeEntity {
         super(x, y);
 
         this.particles = [];
+        this.#bounds = { x: 0, y: 0, width: 0, height: 0 };
         this.particlePool = new BeePool({
             create: createParticle,
             reset(particle, spec = {}) {
@@ -45,7 +46,53 @@ export class BeeParticleSystem extends BeeEntity {
         });
     }
 
+    #bounds;
+
+    /**
+     * Le particelle vivono in coordinate mondo, fuori dal 32×32 di BeeEntity.
+     * Senza particelle il box ha lato 0: drawEntity non le scarta.
+     */
+    getWorldAABB() {
+        const list = this.particles;
+        const box = this.#bounds;
+        if (!list || list.length === 0) {
+            box.x = 0;
+            box.y = 0;
+            box.width = 0;
+            box.height = 0;
+            return box;
+        }
+
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+        for (let i = 0; i < list.length; i++) {
+            const particle = list[i];
+            const size = Number(particle.size);
+            const radius = Number.isFinite(size) ? size : 0;
+            const left = particle.x - radius;
+            const right = particle.x + radius;
+            const top = particle.y - radius;
+            const bottom = particle.y + radius;
+            if (left < minX) minX = left;
+            if (right > maxX) maxX = right;
+            if (top < minY) minY = top;
+            if (bottom > maxY) maxY = bottom;
+        }
+
+        box.x = minX;
+        box.y = minY;
+        box.width = maxX - minX;
+        box.height = maxY - minY;
+        return box;
+    }
+
     emit(count = 10, options = {}) {
+        if (this.destroyed) return;
+        const n = Number(count);
+        if (!Number.isFinite(n) || n <= 0) return;
+
         const {
             speedMin = 30,
             speedMax = 120,
@@ -59,7 +106,7 @@ export class BeeParticleSystem extends BeeEntity {
         const originX = this.worldX;
         const originY = this.worldY;
 
-        for (let i = 0; i < count; i++) {
+        for (let i = 0; i < n; i++) {
             const angle = Math.random() * Math.PI * 2;
             const speed = speedMin + Math.random() * (speedMax - speedMin);
             const life = lifeMin + Math.random() * (lifeMax - lifeMin);
@@ -79,17 +126,23 @@ export class BeeParticleSystem extends BeeEntity {
     }
 
     update(dt, input, engine) {
+        if (this.destroyed || !this.active) return;
+
+        const step = Number(dt);
+        const move = Number.isFinite(step) && step > 0;
         const list = this.particles;
         let write = 0;
         for (let i = 0; i < list.length; i++) {
             const particle = list[i];
-            particle.life -= dt;
+            if (move) particle.life -= step;
             if (particle.life <= 0) {
                 this.particlePool.release(particle);
                 continue;
             }
-            particle.x += particle.vx * dt;
-            particle.y += particle.vy * dt;
+            if (move) {
+                particle.x += particle.vx * step;
+                particle.y += particle.vy * step;
+            }
             list[write] = particle;
             write += 1;
         }
@@ -100,11 +153,13 @@ export class BeeParticleSystem extends BeeEntity {
 
     dispose() {
         this.particlePool.clear();
+        this.particles.length = 0;
         super.dispose();
     }
 
     destroy() {
         this.particlePool.clear();
+        this.particles.length = 0;
         super.destroy();
     }
 
@@ -115,7 +170,8 @@ export class BeeParticleSystem extends BeeEntity {
 
         for (let i = 0; i < this.particles.length; i++) {
             const particle = this.particles[i];
-            ctx.globalAlpha = particle.life / particle.maxLife;
+            const maxLife = particle.maxLife;
+            ctx.globalAlpha = maxLife > 0 ? particle.life / maxLife : 0;
             ctx.fillStyle = particle.color;
             ctx.beginPath();
             ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
