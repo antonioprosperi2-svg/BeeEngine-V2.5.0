@@ -1,9 +1,24 @@
 
-![alt text](https://beeenginejs.com/wp-content/uploads/2026/10/Gemini_Generated_Image_qj1g59qj1g59qj1g.jpg)
+<p align="center">
+  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/Gemini_Generated_Image_egjcavegjcavegjc.jpg" alt="BeeEngine Logo" width="900" />
+</p>
+
 # 🐝 Motore di gioco 2D BeeEngine (v2.9.7 Professional)
 
 BeeEngine è un motore di gioco 2D leggero, modulare e altamente ottimizzato scritto in puro JavaScript moderno (ES Modules) per HTML5 Canvas.
 La **2.9.7** sistema `BeeParticleSystem`: l'AABB segue le particelle vive (niente culling sul 32×32), `update` rispetta `active`/`destroyed`/`dt`, e `destroy` svuota l'array. La **2.9.6** rende `BeeLayer` indipendente dall'ordine delle liste: un figlio con drawLayer proprio non sparisce più se compare prima del padre. La **2.9.5** chiude i bounds di `BeeCamera`: `setBounds` li applica subito, un valore non valido non cancella i limiti già messi, e `Math.round` di x/y non esce dal rettangolo. La **2.9.4** sistema `BeeCamera` da usare (un tick, follow prima del tick, view = canvas). La **2.9.3** allinea `BeeCamera` a `dt` (snap, lerp, bounds, tick nel loop). La **2.9.2** lascia `#pick` decidere durante il lock (coda o interrupt). La **2.9.1** allinea `BeeAnimatedSprite` all'Animator (loop, catch-up, draw). La **2.9.0** apre i plugin: registro cieco + `BeeLocale`. La **2.8.6** sistema `BeePlayer`. La **2.8.5** allinea `BeePlatform.draw`. La **2.8.4** allinea `BeeEnemy.update` a `worldX`. La **2.8.3** rende `BeeMenuScene` un menu configurabile. La **2.8.2** sistema `BeeEnemyShooter`. La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
+
+
+
+
+---
+
+
+
+<div align="center">
+  <img src="./Gemini_Generated_Image_qj1g59qj1g59qj1g.jpg" alt="BeeEngine Official Logo" width="200" />
+  <p><i>Logo Ufficiale BeeEngine</i></p>
+</div>
 
 ## 📁 Struttura del Progetto Aggiornata
 
@@ -98,6 +113,11 @@ One-shot: lo stato `finished` si imposta **prima** della callback. Loop: catch-u
 
 ## 🎬 BeeAnimator — il grafo, non il clip
 
+<div align="center">
+  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/Gemini_Generated_Image_i77em6i77em6i77e-1.jpg" alt="🎬 BeeAnimator" width="600" />
+  <p><i>`🎬 BeeAnimatedSprite` riproduce un clip. `BeeAnimator` decide **quale** e **quando**.</i></p>
+</div>
+
 `BeeAnimatedSprite` riproduce un clip. `BeeAnimator` decide **quale** e **quando**: idle → run → jump, priorità, lock del colpo. Lo sprite resta il renderer. `entity.animator` viene tickato nel loop entity (dt di simulazione: in pausa il clip si ferma). Senza animator, `BeeEntity.update` ticka `entity.sprite` — niente primo frame eterno, niente doppio update se l'animator c'è.
 
 L'Animator è fonte di verità sul loop: `#enter` chiama `sprite.play(clip, { restart: true, loop: next.loop })`. `play` con `loop` booleano sovrascrive `anim.loop` solo per quel play; senza opzione resta il clip. One-shot: ultimo frame + `finished: true`, il timer non accumula. `dt` enorme: al massimo 4 frame di ritardo in `timer`, **un** avanzamento per `update`. `fps` 0 / non numerico cade su 8. `draw` esce se manca `ctx` o i frame, e `restore()` gira sempre.
@@ -133,6 +153,7 @@ actor.animator = animator;
 | `play(name, { force })` | richiesta manuale; `force` rompe il lock |
 | `onComplete` | una volta per ingresso nello stato, non ogni frame con `finished` |
 
+
 `BeeAnimatedSprite.play` ritorna `true`/`false` (clip assente: `false` + `console.warn`). Se uno stato `lock:true` parte senza sprite, o `play` fallisce, l'Animator avvisa: resta bloccato, non è un unlock silenzioso.
 
 Scelte di design (non bug): il primo `add()` è `initial` di default; `#queued` è uno slot solo; `set()` / `when()` su nomi sbagliati o stati non ancora registrati restano silenziosi.
@@ -140,6 +161,11 @@ Scelte di design (non bug): il primo `add()` è `initial` di default; `#queued` 
 Demo: `examples/anim.html` — spazio one-shot, X attacco (`wantsAttack` si spegne in `onEnter`, come `consumeAttack`), H hitch. Test: `node scripts/test-beeanimator.mjs` e `node scripts/test-beeanimatedsprite.mjs`.
 
 ## 📷 BeeCamera — dt, non un lerp per frame
+
+<div align="center">
+  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/Screenshot-2026-10-09-224624.png" alt="BeeCamera & UI Demo" width="600" />
+  <p><i>📷 BeeCamera in azione: il mondo scorre con la telecamera mentre la 🖥 BeeUI mantiene l'HUD fisso in spazio schermo.</i></p>
+</div>
 
 `follow(target)` **tiene** il bersaglio. Il loop, se è `gioco.camera` e c’è un target, chiama **una volta** `update(dt)` **dopo** scene / entity / `gioco.update` e **prima** di `apply`. Non chiamare `camera.update` a mano: due chiamate = due lerp. `follow` in `scene.update` (o una volta in `enter`) va bene. In `gioco.update` ora prende lo stesso frame; prima il tick stava prima e perdevi un frame.
 
@@ -218,6 +244,7 @@ const cut = gioco.timeline()
 | `gioco.tweens.kill(target)` | spegne i tween su quell'oggetto |
 
 Limiti accettati (non sono bug): `onComplete` del tween figlio **non** scatta durante `seek()` — usa `call()` o `timeline.onComplete`. Il residuo di `dt` oltre la fine del ciclo non viene recuperato (nessun catch-up).
+
 
 
 ## 🖼 BeeLayer — pipeline di disegno, non l'array di entity
@@ -301,13 +328,26 @@ gioco.collisions.overlap('player', 'loot', (p, item) => item.collect(p));
 
 `update` esce se `destroyed` / `!active`. Cammina su **`worldX`**, non `x` locale. `setPatrolBounds(minX, maxX)` è AABB: a destra `worldX + width`, non il bordo sinistro dello sprite. Oltre il limite: clamp + inversione di `speed`. Il moto è solo `speed` — non accendere `vx`/`gravity` insieme.
 
+
 ## 🟫 BeePlatform — sprite, non un collider
+
+<div align="center">
+  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/Screenshot-2026-10-09-215821-1.jpg" alt="BeePlatform" width="600" />
+  <p><i>🟫 BeePlatform: Sprite statico per i solidi: color / textureKey, la fisica sta su collisions.solid</i></p>
+</div>
 
 Rettangolo o texture. La solidità **non** vive sulla classe: la scena fa `collisions.solid('player', 'solids')` e il mover chiama `resolvePlatformCollision`. `draw` fa `save`/`restore` e chiama `getAsset` solo se esiste.
 
 Demo: apri `examples/platform.html` (WASD / frecce, spazio per saltare).
 
+
+
 ## 🧍 BeePlayer — platformer / free, non un sasso senza input
+
+<div align="center">
+  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/Screenshot-2026-10-09-224030.jpg" alt="BeePlayer" width="600" />
+  <p><i>🧍BeePlayer: Senza 'input' la fisica gira lo stesso</i></p>
+</div>
 
 Senza `input` la fisica gira lo stesso (`integrate`, gravità, figli). Solo `destroyed` / `!active` escono. `setMode('free')` mette `gravity = 0`; `setMode('platformer')` la rimette a 500. Non assegnare `this.mode` a mano.
 
@@ -455,6 +495,11 @@ Il loop **non** chiama `scenes.update` in pausa. Un menu + `engine.pause()` è s
 
 ## 🧭 BeeTransform (v2.5.0) — scena grafo affine
 
+<div align="center">
+  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/download.png" alt="🧭 BeeTransform " width="600" />
+  <p><i>🧭 BeeTransform è la geometria.</i></p>
+</div>
+
 `BeeTransform` è la geometria. `BeeEntity` ne possiede una (`entity.transform`) e non ricalcola più il mondo come somma di offset.
 
 Matrice locale: `T(pos) · R · S · T(-pivot)`.  
@@ -581,7 +626,13 @@ gioco.save.save('settings', { muted: true });   // DTO piatto
 
 Safari privato / storage assente: fallback in memoria di sessione (`fallback: 'memory'`). `save` non lancia. I record pre-envelope restano leggibili come `legacy`.
 
+
 ## 🐞 BeeLadybug (v2.4.0) — debug visivo e monitoraggio
+
+<div align="center">
+  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/Gemini_Generated_Image_hrljqxhrljqxhrlj-2.jpg" alt="🐞 BeeLadybug" width="600" />
+  <p><i>🐞 BeeLadybug: l'occhio del motore</i></p>
+</div>
 
 `BeeLadybug` è l'occhio del motore: non è una classe di gameplay. Vive in `src/debug/` e disegna **dopo** il mondo (hitbox in spazio camera, overlay in spazio schermo).
 
@@ -689,4 +740,3 @@ gioco.start();
 
 ---
 
-![BeeEngine](https://raw.githubusercontent.com/antonioprosperi2-svg/BeeEngine-V2.0/main/download.png)
