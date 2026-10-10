@@ -1,6 +1,6 @@
 
 <p align="center">
-  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/Gemini_Generated_Image_egjcavegjcavegjc.jpg" alt="BeeEngine Logo" width="900" />
+  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/bee-animated.gif" alt="BeeEngine Logo" width="900" />
 </p>
 
 # 🐝 Motore di gioco 2D BeeEngine (v2.9.7 Professional)
@@ -16,7 +16,7 @@ La **2.9.7** sistema `BeeParticleSystem`: l'AABB segue le particelle vive (nient
 
 
 <div align="center">
-  <img src="./Gemini_Generated_Image_qj1g59qj1g59qj1g.jpg" alt="BeeEngine Official Logo" width="200" />
+  <img src="./Gemini_Generated_Image_qj1g59qj1g59qj1g.jpg" alt="BeeEngine Official Logo" width="500" />
   <p><i>Logo Ufficiale BeeEngine</i></p>
 </div>
 
