@@ -16,7 +16,7 @@ La **2.10.0** aggiunge il plugin `BeeInventory` (stack, uso, equip, salvataggio 
 
 
 <div align="center">
-  <img src="./Gemini_Generated_Image_qj1g59qj1g59qj1g.jpg" alt="BeeEngine Official Logo" width="500" />
+  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/bee-engine-logo-animated.gif" alt="BeeEngine Official Logo" width="500" />
   <p><i>Logo Ufficiale BeeEngine</i></p>
 </div>
 
@@ -431,6 +431,11 @@ Tab / Shift+Tab, frecce (o WASD), Enter/Space, D-pad e A del gamepad. Focus con 
 Limite: non è HTML/DOM. Niente input text nativo, scroll view o flex wrap — quelli sono plugin.
 
 ## 🔌 Plugin — registro cieco (2.9.0)
+
+<div align="center">
+  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/screen-recording-ezgif.com-video-to-gif-converter-5.gif" alt="🔌 Plugin" width="600" />
+  <p><i> #BeeLocale: pura lettura #BeeInventornon: disegna e non entra nel loopy </i></p>
+</div>
 
 Il motore **non importa** i plugin. Contratto in `src/plugins/PLUGIN_CONTRACT.md`: `attach` / `detach`, `registerPlugin` / `unregisterPlugin`. Se serve un frame: `engine.onTick(fn)`, mai `loop()` né sovrascrivere `update`.
 
