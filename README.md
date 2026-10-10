@@ -3,10 +3,10 @@
   <img src="https://beeenginejs.com/wp-content/uploads/2026/10/bee-animated.gif" alt="BeeEngine Logo" width="900" />
 </p>
 
-# 🐝 Motore di gioco 2D BeeEngine (v2.9.7 Professional)
+# 🐝 Motore di gioco 2D BeeEngine (v2.10.0 Professional)
 
 BeeEngine è un motore di gioco 2D leggero, modulare e altamente ottimizzato scritto in puro JavaScript moderno (ES Modules) per HTML5 Canvas.
-La **2.9.7** sistema `BeeParticleSystem`: l'AABB segue le particelle vive (niente culling sul 32×32), `update` rispetta `active`/`destroyed`/`dt`, e `destroy` svuota l'array. La **2.9.6** rende `BeeLayer` indipendente dall'ordine delle liste: un figlio con drawLayer proprio non sparisce più se compare prima del padre. La **2.9.5** chiude i bounds di `BeeCamera`: `setBounds` li applica subito, un valore non valido non cancella i limiti già messi, e `Math.round` di x/y non esce dal rettangolo. La **2.9.4** sistema `BeeCamera` da usare (un tick, follow prima del tick, view = canvas). La **2.9.3** allinea `BeeCamera` a `dt` (snap, lerp, bounds, tick nel loop). La **2.9.2** lascia `#pick` decidere durante il lock (coda o interrupt). La **2.9.1** allinea `BeeAnimatedSprite` all'Animator (loop, catch-up, draw). La **2.9.0** apre i plugin: registro cieco + `BeeLocale`. La **2.8.6** sistema `BeePlayer`. La **2.8.5** allinea `BeePlatform.draw`. La **2.8.4** allinea `BeeEnemy.update` a `worldX`. La **2.8.3** rende `BeeMenuScene` un menu configurabile. La **2.8.2** sistema `BeeEnemyShooter`. La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
+La **2.10.0** aggiunge il plugin `BeeInventory` (stack, uso, equip, salvataggio degli slot): il motore non lo importa. La **2.9.7** sistema `BeeParticleSystem`: l'AABB segue le particelle vive (niente culling sul 32×32), `update` rispetta `active`/`destroyed`/`dt`, e `destroy` svuota l'array. La **2.9.6** rende `BeeLayer` indipendente dall'ordine delle liste: un figlio con drawLayer proprio non sparisce più se compare prima del padre. La **2.9.5** chiude i bounds di `BeeCamera`: `setBounds` li applica subito, un valore non valido non cancella i limiti già messi, e `Math.round` di x/y non esce dal rettangolo. La **2.9.4** sistema `BeeCamera` da usare (un tick, follow prima del tick, view = canvas). La **2.9.3** allinea `BeeCamera` a `dt` (snap, lerp, bounds, tick nel loop). La **2.9.2** lascia `#pick` decidere durante il lock (coda o interrupt). La **2.9.1** allinea `BeeAnimatedSprite` all'Animator (loop, catch-up, draw). La **2.9.0** apre i plugin: registro cieco + `BeeLocale`. La **2.8.6** sistema `BeePlayer`. La **2.8.5** allinea `BeePlatform.draw`. La **2.8.4** allinea `BeeEnemy.update` a `worldX`. La **2.8.3** rende `BeeMenuScene` un menu configurabile. La **2.8.2** sistema `BeeEnemyShooter`. La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
 
 
 
@@ -43,7 +43,7 @@ BeeEngine-V2.9/
     ├── input/                  # Tastiera, mouse, joystick, touch, button
     ├── ui/                     # BeeUI: Control, panel, stack, label, button, nine-slice
     ├── physics/                # BeeSpatialHash, BeePhysicsWorld, BeeRigidBody, AABB groups
-    ├── plugins/                # contratto + BeeLocale (il motore non importa questi file)
+    ├── plugins/                # contratto + BeeLocale + BeeInventory (il motore non importa questi file)
     └── debug/                  # BeeLadybug: overlay e hitbox
 ```
 
@@ -436,7 +436,7 @@ Il motore **non importa** i plugin. Contratto in `src/plugins/PLUGIN_CONTRACT.md
 
 ```javascript
 import { BeeEngine } from 'beeengine';
-import { BeeLocale } from 'beeengine/plugins';
+import { BeeLocale, BeeInventory } from 'beeengine/plugins';
 
 const gioco = new BeeEngine('testCanvas', 800, 600);
 const locale = new BeeLocale({
@@ -451,9 +451,19 @@ locale.attach(gioco);
 locale.t('play');   // Gioca
 locale.t('hint');   // Press start (fallback)
 locale.t('ghost');  // ghost (chiave visibile, non "")
+
+const inventory = new BeeInventory({ slots: 1, equipSlots: ['hand'], engine: gioco });
+inventory.defineItem('potion', {
+    name: 'Pozione',
+    maxStack: 5,
+    consumable: true,
+    onUse: () => true
+});
+const drop = inventory.add('potion', 8); // { added: 5, left: 3 }
+inventory.use(0, null);
 ```
 
-`BeeLocale` è pura lettura. Chi disegna chiama `t(key)`. Prossimi (uno alla volta): Light, Dialogue, Inventory, Quest, Net, Post, Spine.
+`BeeLocale` è pura lettura. Chi disegna chiama `t(key)`. `BeeInventory` non disegna e non entra nel loop: `add` dice sempre cosa non è entrato (`left`), `equip` / `unequip` o riescono per intero o lasciano lo stato com'era. Le definizioni restano nel codice; `toJSON` salva solo slot ed equipaggiamento. Demo: `examples/inventory.html` (collectible + conteggi via `BeeLocale.t`). Test: `node scripts/test-beeinventory.mjs`. Prossimi (uno alla volta): Light, Dialogue, Quest, Net, Post, Spine.
 
 ## 🎬 BeeSceneManager — replace, non stack
 

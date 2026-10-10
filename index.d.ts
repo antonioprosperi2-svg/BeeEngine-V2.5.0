@@ -2193,6 +2193,71 @@ export declare class BeeLocale implements BeePlugin {
   get(key: string): string;
 }
 
+export interface BeeItemStack {
+  id: string;
+  qty: number;
+}
+
+export interface BeeItemDef {
+  name?: string;
+  maxStack?: number;
+  consumable?: boolean;
+  equipSlot?: string | null;
+  onUse?: ((ctx: unknown, stack: BeeItemStack, inventory: BeeInventory) => boolean | void) | null;
+  data?: Record<string, unknown>;
+}
+
+export interface BeeInventoryOptions {
+  slots?: number;
+  equipSlots?: string[];
+  engine?: BeeEngine;
+}
+
+export interface BeeInventoryChange {
+  type: "add" | "remove" | "move" | "use" | "equip" | "unequip";
+  id?: string;
+  qty?: number;
+  added?: number;
+  left?: number;
+  removed?: number;
+  from?: number;
+  to?: number;
+  index?: number;
+  equipSlot?: string;
+}
+
+export declare class BeeInventory implements BeePlugin {
+  engine: BeeEngine | null;
+
+  constructor(options?: BeeInventoryOptions);
+  attach(engine: BeeEngine): this;
+  detach(): this;
+  /** Id vuoto o già definito: lancia. */
+  defineItem(id: string, def?: BeeItemDef): this;
+  /** Riempie gli stack esistenti, poi gli slot vuoti. Senza spazio `left > 0`. */
+  add(id: string, qty?: number): { added: number; left: number };
+  /** Toglie dall'ultimo slot al primo. Ritorna solo quanto c'era. */
+  remove(id: string, qty?: number): number;
+  count(id: string): number;
+  has(id: string, qty?: number): boolean;
+  /** Copia dello slot, o `null`. Mai il riferimento interno. */
+  get(index: number): BeeItemStack | null;
+  list(): Array<BeeItemStack | null>;
+  /** Vuoto: sposta. Stesso id: unisce fino a `maxStack`. Id diverso: scambia. */
+  move(from: number, to: number): boolean;
+  /** Consuma 1 solo se `onUse` non lancia e non ritorna `false`. */
+  use(index: number, ctx?: unknown): boolean;
+  /** Se il vecchio oggetto non torna nello zaino, non cambia nulla. */
+  equip(index: number): boolean;
+  unequip(equipSlot: string): boolean;
+  equipped(equipSlot: string): BeeItemStack | null;
+  /** Spegne con la funzione ritornata. Non scatta se l'operazione fallisce. */
+  onChange(fn: (event: BeeInventoryChange) => void): () => void;
+  toJSON(): { slots: Array<BeeItemStack | null>; equipment: Record<string, BeeItemStack | null> };
+  fromJSON(data: { slots?: Array<BeeItemStack | null | undefined>; equipment?: Record<string, BeeItemStack | null> }): this;
+  clear(): this;
+}
+
 export declare class BeeEngine {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:,">
+    <title>BeeEngine — BeeInventory demo</title>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #111;
+        }
+
+        canvas {
+            display: block;
+            margin: 20px auto;
+            background: #12141c;
+            border: 4px solid #ffd700;
+        }
+
+        a {
+            color: #ffd700;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="testCanvas" width="800" height="480"></canvas>
+    <div id="controls" style="text-align:center; margin:10px; color:#ccc; font-family:monospace;">
+        A / D o frecce per raccogliere · L cambia lingua
+        · <a href="./player.html">Player</a>
+        · <a href="../index.html">BeeUI</a>
+    </div>
+    <script type="module" src="./inventory-demo.js"></script>
+</body>
+
+</html>
