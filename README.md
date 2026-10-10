@@ -114,7 +114,7 @@ One-shot: lo stato `finished` si imposta **prima** della callback. Loop: catch-u
 ## 🎬 BeeAnimator — il grafo, non il clip
 
 <div align="center">
-  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/Gemini_Generated_Image_i77em6i77em6i77e-1.jpg" alt="🎬 BeeAnimator" width="600" />
+  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/screen-recording-ezgif.com-video-to-gif-converter.gif" alt="🎬 BeeAnimator" width="600" />
   <p><i>`🎬 BeeAnimatedSprite` riproduce un clip. `BeeAnimator` decide **quale** e **quando**.</i></p>
 </div>
 
@@ -163,9 +163,12 @@ Demo: `examples/anim.html` — spazio one-shot, X attacco (`wantsAttack` si speg
 ## 📷 BeeCamera — dt, non un lerp per frame
 
 
+<div align="center">
+  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/2026-10-1014-17-42-ezgif.com-video-to-gif-converter-1.gif" alt="BeeCamera & UI Demo" width="600" />
+  <p><i>BeeCamera in azione: il mondo scorre con la telecamera mentre la BeeUI mantiene l'HUD fisso in spazio schermo.</i></p>
+</div>
 
 
-https://github.com/user-attachments/assets/36a4cca4-837c-4680-add0-72233602b930
 
 `follow(target)` **tiene** il bersaglio. Il loop, se è `gioco.camera` e c’è un target, chiama **una volta** `update(dt)` **dopo** scene / entity / `gioco.update` e **prima** di `apply`. Non chiamare `camera.update` a mano: due chiamate = due lerp. `follow` in `scene.update` (o una volta in `enter`) va bene. In `gioco.update` ora prende lo stesso frame; prima il tick stava prima e perdevi un frame.
 
@@ -332,7 +335,7 @@ gioco.collisions.overlap('player', 'loot', (p, item) => item.collect(p));
 ## 🟫 BeePlatform — sprite, non un collider
 
 <div align="center">
-  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/Screenshot-2026-10-09-215821-1.jpg" alt="BeePlatform" width="600" />
+  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/screen-recording-ezgif.com-video-to-gif-converter-3.gif" alt="BeePlatform" width="600" />
   <p><i>🟫 BeePlatform: Sprite statico per i solidi: color / textureKey, la fisica sta su collisions.solid</i></p>
 </div>
 
@@ -345,7 +348,7 @@ Demo: apri `examples/platform.html` (WASD / frecce, spazio per saltare).
 ## 🧍 BeePlayer — platformer / free, non un sasso senza input
 
 <div align="center">
-  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/Screenshot-2026-10-09-224030.jpg" alt="BeePlayer" width="600" />
+  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/screen-recording-ezgif.com-video-to-gif-converter-1-1.gif" alt="BeePlayer" width="600" />
   <p><i>🧍BeePlayer: Senza 'input' la fisica gira lo stesso</i></p>
 </div>
 
@@ -525,6 +528,11 @@ ctx.restore();
 
 ## ⚖ BeeRigidBody + BeePhysicsWorld — corpo e mondo, non AABB a gruppi
 
+<div align="center">
+  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/beephysics-crop.gif" alt="⚖ BeeRigidBody + BeePhysicsWorld " width="600" />
+  <p><i>⚖ BeeRigidBody + BeePhysicsWorld gravità di scena, massa, impulsi.</i></p>
+</div>
+
 `BeeEntity` resta dati. `BeeTransform` resta geometria. La fisica vive in `gioco.physics` (`BeePhysicsWorld`): gravità di scena, massa, impulsi, layer/mask, forme box/cerchio/capsula. `BeeCollisionSystem` **non** è questo: è ancora il risolutore AABB a gruppi per il platformer.
 
 Il loop chiama `time.consumeFixedSteps` → `physics.step`. Se l'entità ha un `body`, `integrate()` non si muove da sola.
@@ -630,7 +638,7 @@ Safari privato / storage assente: fallback in memoria di sessione (`fallback: 'm
 ## 🐞 BeeLadybug (v2.4.0) — debug visivo e monitoraggio
 
 <div align="center">
-  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/2026-10-1014-51-19-ezgif.com-optimize.gif" alt="🐞 BeeLadybug" width="800" />
+  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/screen-recording-ezgif.com-video-to-gif-converter-1.gif" alt="🐞 BeeLadybug" width="800" />
   <p><i>🐞 BeeLadybug: l'occhio del motore</i></p>
 </div>
 
@@ -666,6 +674,11 @@ gioco.start();
 ```
 
 ## 🚀 Novità e ottimizzazioni professionali nella v2.2.0
+
+<div align="center">
+  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/Registrazione2026-08-22111711-ezgif.com-video-to-gif-converter.gif" alt="BeeJoystick" width="800" />
+  <p><i>BeeJoystick Attivazione rapida</i></p>
+</div>
 
 ### 1. Controlli Mobile e Joystick Virtuale (`BeeJoystick` & `BeeTouchControls`)
 * **Supporto nativo:** Gestione integrata per tutti gli schermi touch.
