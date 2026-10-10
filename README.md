@@ -162,8 +162,9 @@ Demo: `examples/anim.html` — spazio one-shot, X attacco (`wantsAttack` si speg
 
 ## 📷 BeeCamera — dt, non un lerp per frame
 
+
 <div align="center">
-  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/Screenshot-2026-10-09-224624.png" alt="BeeCamera & UI Demo" width="600" />
+  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/2026-10-1014-17-42-ezgif.com-video-to-gif-converter.gif" alt="BeeCamera & UI Demo" width="600" />
   <p><i>📷 BeeCamera in azione: il mondo scorre con la telecamera mentre la 🖥 BeeUI mantiene l'HUD fisso in spazio schermo.</i></p>
 </div>
 
@@ -630,7 +631,7 @@ Safari privato / storage assente: fallback in memoria di sessione (`fallback: 'm
 ## 🐞 BeeLadybug (v2.4.0) — debug visivo e monitoraggio
 
 <div align="center">
-  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/Gemini_Generated_Image_hrljqxhrljqxhrlj-2.jpg" alt="🐞 BeeLadybug" width="600" />
+  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/2026-10-1014-51-19-ezgif.com-optimize.gif" alt="🐞 BeeLadybug" width="800" />
   <p><i>🐞 BeeLadybug: l'occhio del motore</i></p>
 </div>
 
