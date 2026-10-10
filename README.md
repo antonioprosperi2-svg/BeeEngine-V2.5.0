@@ -163,10 +163,9 @@ Demo: `examples/anim.html` — spazio one-shot, X attacco (`wantsAttack` si speg
 ## 📷 BeeCamera — dt, non un lerp per frame
 
 
-<div align="center">
-  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/2026-10-1014-17-42-ezgif.com-video-to-gif-converter.gif" alt="BeeCamera & UI Demo" width="600" />
-  <p><i>📷 BeeCamera in azione: il mondo scorre con la telecamera mentre la 🖥 BeeUI mantiene l'HUD fisso in spazio schermo.</i></p>
-</div>
+
+
+https://github.com/user-attachments/assets/36a4cca4-837c-4680-add0-72233602b930
 
 `follow(target)` **tiene** il bersaglio. Il loop, se è `gioco.camera` e c’è un target, chiama **una volta** `update(dt)` **dopo** scene / entity / `gioco.update` e **prima** di `apply`. Non chiamare `camera.update` a mano: due chiamate = due lerp. `follow` in `scene.update` (o una volta in `enter`) va bene. In `gioco.update` ora prende lo stesso frame; prima il tick stava prima e perdevi un frame.
 
