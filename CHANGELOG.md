@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.10.1] - 2026-10-10
+
+### Fixed
+
+- `BeeSprite` plays a sheet in frames per second (`speed` defaults to 8). `dt` is seconds.
+- `frameCount` defaults to one row. A larger count walks the next rows, then wraps.
+- A non-finite `dt`, or a `framesPerRow` / `frameCount` that is not a positive number, leaves the frame alone and does not draw.
+- `examples/sprite.html` shows one row cycling and an eight-frame sheet entering the second row.
+
 ## [2.10.0] - 2026-10-10
 
 ### Added

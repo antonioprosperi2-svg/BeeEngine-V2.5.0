@@ -1052,23 +1052,29 @@ export declare class BeeParticleSystem extends BeeEntity {
 }
 
 export declare class BeeSprite {
-  image: CanvasImageSource;
+  image: CanvasImageSource | null;
   frameWidth: number;
   frameHeight: number;
   framesPerRow: number;
+  /** Frame nel ciclo. Se omesso vale `framesPerRow` (una riga). */
+  frameCount: number;
+  /** Frame al secondo. Default 8. `dt` è in secondi. */
   speed: number;
   frame: number;
 
   constructor(
-    image: CanvasImageSource,
+    image: CanvasImageSource | null,
     frameWidth: number,
     frameHeight: number,
     framesPerRow: number,
-    speed?: number
+    speed?: number,
+    frameCount?: number
   );
 
+  /** `dt` non finito, o `framesPerRow` / `frameCount` non finiti o `<= 0`: non tocca `frame`. Non disegna. */
   update(dt: number): void;
-  draw(ctx: CanvasRenderingContext2D, x: number, y: number): void;
+  /** Senza `ctx` o `image`, o con foglio non valido: non chiama `drawImage`. */
+  draw(ctx: CanvasRenderingContext2D | null, x: number, y: number): void;
 }
 
 export declare class BeeGrid {
