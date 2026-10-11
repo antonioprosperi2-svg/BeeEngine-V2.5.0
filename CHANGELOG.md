@@ -12,6 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.10.2] - 2026-10-11
+
+### Fixed
+
+- `BeeSpriteSheet` only crops one frame index. It does not animate.
+- Without `frameCount`, any index still draws. A positive `frameCount` skips indexes outside that range.
+- `drawFrame` does nothing when context, image, frame size, or `framesPerRow` is missing or not a positive number. `0` and `NaN` stay as given.
+- Passing only `col` or only `row` sets the other offset to 0. A missing destination size uses the frame size.
+
 ## [2.10.1] - 2026-10-10
 
 ### Fixed

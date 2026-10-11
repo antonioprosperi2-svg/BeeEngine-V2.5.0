@@ -1813,27 +1813,38 @@ export declare class BeeJoystick {
 }
 
 export declare class BeeSpriteSheet {
-  image: HTMLImageElement;
+  image: CanvasImageSource | null;
   frameWidth: number;
   frameHeight: number;
-  cols: number;
-  rows: number;
-  frameCount: number;
+  /** Se l'opzione manca vale 1. `0` e `NaN` restano così e `drawFrame` non disegna. */
+  framesPerRow: number;
+  offsetX: number;
+  offsetY: number;
+  /** Se manca, l'indice non ha un limite. */
+  frameCount?: number;
 
   constructor(
-    image: HTMLImageElement,
+    image: CanvasImageSource | null,
     frameWidth: number,
     frameHeight: number,
-    options?: { col?: number; row?: number; framesPerRow?: number; frameCount?: number; offsetX?: number; offsetY?: number }
+    options?: {
+      col?: number;
+      row?: number;
+      framesPerRow?: number;
+      frameCount?: number;
+      offsetX?: number;
+      offsetY?: number;
+    }
   );
 
+  /** Senza `ctx` o `image`, foglio non valido, indice non finito o fuori da `frameCount`: non chiama `drawImage`. */
   drawFrame(
-    ctx: CanvasRenderingContext2D,
+    ctx: CanvasRenderingContext2D | null,
     frameIndex: number,
     destX: number,
     destY: number,
-    destW: number,
-    destH: number
+    destW?: number,
+    destH?: number
   ): void;
 }
 
@@ -2342,7 +2353,7 @@ export declare class BeeEngine {
   enableLadybug(options?: BeeLadybugOptions): BeeLadybug;
 
   createSpriteSheet(
-    image: HTMLImageElement,
+    image: CanvasImageSource | null,
     frameWidth: number,
     frameHeight: number,
     config?: object
