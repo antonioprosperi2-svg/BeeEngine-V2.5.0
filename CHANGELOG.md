@@ -1,5 +1,10 @@
 # Changelog
 
+<div align="center">
+  <img src="https://beeenginejs.com/wp-content/uploads/2026/10/bee-engine-logo-animated.gif" alt="BeeEngine Official Logo" width="500" />
+  <p><i>Logo Ufficiale BeeEngine</i></p>
+</div>
+
 All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
