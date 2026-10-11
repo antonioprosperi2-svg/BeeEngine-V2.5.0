@@ -180,4 +180,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 `package.json` records 2.0.0 (2026-07-26), 2.1.2 and 2.1.3 (2026-08-19), and 2.2.0 (2026-08-24). Those commits do not describe a library change clearly enough to list here.
 
-See the commit history: < https://github.com/antonioprosperi2-svg/BeeEngine-V2.5.0/commits/main>
+See the commit history: <[casa](https://github.com/antonioprosperi2-svg) >
