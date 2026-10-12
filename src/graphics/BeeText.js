@@ -1,6 +1,13 @@
 import { BeeEntity } from '../core/BeeEntity.js';
 import { BEE_DRAW } from './BeeLayer.js';
 
+function formatScore(score) {
+    const n = Number.isFinite(score) ? score : 0;
+    const negative = n < 0;
+    const digits = String(Math.abs(n));
+    return (negative ? '-' : '') + digits.padStart(negative ? 5 : 6, '0');
+}
+
 /**
  * BeeText: Renders single text elements and provides a customizable HUD layout.
  */
@@ -17,6 +24,7 @@ export class BeeText extends BeeEntity {
     }
 
     draw(ctx) {
+        if (!ctx) return;
         if (!this.visible) return;
 
         ctx.save();
@@ -37,6 +45,8 @@ export class BeeText extends BeeEntity {
      * @param {Object} [options={}] Custom HUD options (scoreLabel, livesLabel, icon)
      */
     static drawHUD(ctx, score = 0, lives = 3, title = 'GAME', options = {}) {
+        if (!ctx || !ctx.canvas) return;
+
         const {
             scoreLabel = 'SCORE',
             livesLabel = 'LIVES',
@@ -45,8 +55,13 @@ export class BeeText extends BeeEntity {
             titleColor = '#FFD700',
             textColor = '#FFFFFF'
         } = options;
+        const icon = typeof livesIcon === 'string' ? livesIcon : '❤️ ';
+        const formattedScore = formatScore(score);
+        const lifeCount = Number.isFinite(lives) ? Math.max(0, Math.floor(lives)) : 0;
+        const livesText = lifeCount <= 32 ? (icon.repeat(lifeCount) || '0') : String(lifeCount);
 
         ctx.save();
+        ctx.textBaseline = 'alphabetic';
 
         ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
         ctx.fillRect(0, 0, ctx.canvas.width, barHeight);
@@ -61,14 +76,12 @@ export class BeeText extends BeeEntity {
         ctx.fillStyle = textColor;
         ctx.font = 'bold 18px monospace';
         ctx.textAlign = 'left';
-        const formattedScore = String(score).padStart(6, '0');
         ctx.fillText(`${scoreLabel}: ${formattedScore}`, 20, 28);
 
         ctx.fillStyle = '#FF4444';
         ctx.font = '18px Arial';
         ctx.textAlign = 'right';
-        const hearts = livesIcon.repeat(Math.max(0, lives));
-        ctx.fillText(`${livesLabel}: ${hearts || '0'}`, ctx.canvas.width - 20, 28);
+        ctx.fillText(`${livesLabel}: ${livesText}`, ctx.canvas.width - 20, 28);
 
         ctx.restore();
     }

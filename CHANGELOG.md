@@ -12,6 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.10.3] - 2026-10-12
+
+### Fixed
+
+- `BeeText.draw` does nothing without a canvas context. A hidden label still skips drawing.
+- The HUD score pad keeps a minus in front: `-3` is shown as `-00003`. A non-finite score is `0`.
+- Lives that are not a whole number are floored, and a non-finite value is `0`. More than 32 lives are written as a number. The HUD text baseline is alphabetic.
+- `examples/text.html` shows a label plus a HUD with a negative score and one heart.
+
 ## [2.10.2] - 2026-10-11
 
 ### Fixed

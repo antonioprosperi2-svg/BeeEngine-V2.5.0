@@ -970,10 +970,16 @@ export declare class BeeText extends BeeEntity {
     align?: CanvasTextAlign
   );
 
-  draw(ctx: CanvasRenderingContext2D): void;
+  /** Senza `ctx` non disegna. `visible === false` esce prima, come prima. */
+  draw(ctx: CanvasRenderingContext2D | null): void;
 
+  /**
+   * Barra in alto. Dopo `save`, `textBaseline` è `alphabetic`.
+   * `score` non finito vale 0; il segno sta davanti al pad (`-00003`).
+   * `lives` non finito vale 0, altrimenti è un intero ≥ 0. Da 0 a 32 ripete l'icona; sopra scrive il numero.
+   */
   static drawHUD(
-    ctx: CanvasRenderingContext2D,
+    ctx: CanvasRenderingContext2D | null,
     score?: number,
     lives?: number,
     title?: string,
