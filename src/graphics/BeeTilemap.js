@@ -1,4 +1,5 @@
 import { BeeEntity } from '../core/BeeEntity.js';
+
 export class BeeTilemap extends BeeEntity {
     constructor({
         x = 0,
@@ -17,16 +18,48 @@ export class BeeTilemap extends BeeEntity {
 
         this.tileset = tileset;
         this.tilesetColumns = tilesetColumns;
+    }
 
-        this.rows = tiles.length;
-        this.cols = tiles[0]?.length ?? 0;
+    get rows() {
+        return Array.isArray(this.tiles) ? this.tiles.length : 0;
+    }
+
+    get cols() {
+        const tiles = this.tiles;
+        if (!Array.isArray(tiles)) return 0;
+        let cols = 0;
+        for (let i = 0; i < tiles.length; i++) {
+            const row = tiles[i];
+            const len = Array.isArray(row) ? row.length : 0;
+            if (len > cols) cols = len;
+        }
+        return cols;
+    }
+
+    /**
+     * Intera mappa. Vuota, o `tileSize` non finito o `<= 0`: lati 0.
+     */
+    getWorldAABB() {
+        const size = this.tileSize;
+        if (!Number.isFinite(size) || size <= 0 || this.cols <= 0 || this.rows <= 0) {
+            return { x: this.worldX, y: this.worldY, width: 0, height: 0 };
+        }
+        return {
+            x: this.worldX,
+            y: this.worldY,
+            width: this.cols * size,
+            height: this.rows * size
+        };
     }
 
     getTile(col, row) {
         if (row < 0 || row >= this.rows) return null;
         if (col < 0 || col >= this.cols) return null;
 
-        return this.tiles[row][col];
+        const line = this.tiles[row];
+        if (!Array.isArray(line) || col >= line.length) return 0;
+        const tile = line[col];
+        return tile === undefined ? 0 : tile;
     }
 
     worldToTile(px, py) {
@@ -39,7 +72,7 @@ export class BeeTilemap extends BeeEntity {
     isSolidTile(col, row) {
         const tile = this.getTile(col, row);
 
-        if (tile === null) return false;
+        if (tile === null || tile === 0) return false;
 
         return this.solidTiles.includes(tile);
     }
@@ -50,25 +83,30 @@ export class BeeTilemap extends BeeEntity {
     }
 
     entityCollides(entity) {
-        if (!entity.collider) return false;
+        if (!entity || !entity.collider) return false;
 
         const c = entity.collider;
+        if (!(c.width > 0) || !(c.height > 0)) return false;
+        if (!Number.isFinite(this.tileSize) || this.tileSize <= 0) return false;
 
-        const left = c.x;
-        const right = c.x + c.width;
-        const top = c.y;
-        const bottom = c.y + c.height;
+        const startCol = Math.floor((c.x - this.worldX) / this.tileSize);
+        const startRow = Math.floor((c.y - this.worldY) / this.tileSize);
+        const endCol = this.#exclusiveEnd(c.x + c.width, this.worldX);
+        const endRow = this.#exclusiveEnd(c.y + c.height, this.worldY);
 
-        return (
-            this.isSolidAtPixel(left, top) ||
-            this.isSolidAtPixel(right, top) ||
-            this.isSolidAtPixel(left, bottom) ||
-            this.isSolidAtPixel(right, bottom)
-        );
+        for (let row = startRow; row <= endRow; row++) {
+            for (let col = startCol; col <= endCol; col++) {
+                if (this.isSolidTile(col, row)) return true;
+            }
+        }
+        return false;
     }
 
     draw(ctx, engine) {
+        if (!ctx) return;
         if (!this.visible) return;
+        if (!Number.isFinite(this.tileSize) || this.tileSize <= 0) return;
+        if (!Number.isFinite(this.tilesetColumns) || this.tilesetColumns <= 0) return;
 
         const originX = this.worldX;
         const originY = this.worldY;
@@ -88,9 +126,9 @@ export class BeeTilemap extends BeeEntity {
 
         for (let row = startRow; row <= endRow; row++) {
             for (let col = startCol; col <= endCol; col++) {
-                const tile = this.tiles[row][col];
+                const tile = this.getTile(col, row);
 
-                if (tile === 0) continue;
+                if (tile === 0 || tile === null) continue;
 
                 const drawX = originX + col * this.tileSize;
                 const drawY = originY + row * this.tileSize;
@@ -102,6 +140,13 @@ export class BeeTilemap extends BeeEntity {
                 this.#renderTile(ctx, tile, drawX, drawY);
             }
         }
+    }
+
+    #exclusiveEnd(edge, origin) {
+        const local = edge - origin;
+        const index = Math.floor(local / this.tileSize);
+        if (local === index * this.tileSize) return index - 1;
+        return index;
     }
 
     #getViewBounds(engine) {
@@ -124,6 +169,7 @@ export class BeeTilemap extends BeeEntity {
     #renderTile(ctx, tile, drawX, drawY) {
         if (this.tileset) {
             const index = tile - 1;
+            if (!Number.isFinite(index) || index < 0) return;
 
             const sx = (index % this.tilesetColumns) * this.tileSize;
             const sy = Math.floor(index / this.tilesetColumns) * this.tileSize;
@@ -142,14 +188,9 @@ export class BeeTilemap extends BeeEntity {
             return;
         }
 
-        ctx.fillStyle = this.solidTiles.includes(tile)
-            ? "#666"
-            : "#999";
-
+        ctx.save();
+        ctx.fillStyle = this.solidTiles.includes(tile) ? '#666' : '#999';
         ctx.fillRect(drawX, drawY, this.tileSize, this.tileSize);
+        ctx.restore();
     }
 }
-/** 🌟  * Classe BeeTilemap: Gestisce la mappa di gioco strutturata a griglia (tile).
- * Si occupa di renderizzare lo sfondo e i livelli visivi, e controlla 
- * la solidità dei singoli blocchi per gestire i muri e le collisioni del Player.
- */

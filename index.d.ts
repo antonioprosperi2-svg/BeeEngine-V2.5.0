@@ -1007,17 +1007,24 @@ export declare class BeeTilemap extends BeeEntity {
   solidTiles: number[];
   tileset: CanvasImageSource | null;
   tilesetColumns: number;
-  rows: number;
-  cols: number;
+  /** Seguono `tiles`. `cols` è la riga più lunga. */
+  readonly rows: number;
+  readonly cols: number;
 
   constructor(options?: BeeTilemapOptions);
 
+  /** Rettangolo dell'intera mappa. Vuota o `tileSize` non valido: width e height 0. */
+  getWorldAABB(): BeeRect;
+  /** Cella mancante o `undefined`: 0. Fuori mappa: `null`. 0 è vuoto. */
   getTile(col: number, row: number): number | null;
   worldToTile(px: number, py: number): { col: number; row: number };
+  /** Lo legge il pathfinder. 0 e le celle fuori non sono solide. */
   isSolidTile(col: number, row: number): boolean;
   isSolidAtPixel(px: number, py: number): boolean;
+  /** Senza collider, o lati `<= 0`: false. Il bordo destro e basso non entra nella tile dopo. */
   entityCollides(entity: BeeEntity): boolean;
-  draw(ctx: CanvasRenderingContext2D, engine?: BeeEngine): void;
+  /** Senza `ctx`, o `tileSize` / `tilesetColumns` non finiti o `<= 0`: non disegna. */
+  draw(ctx: CanvasRenderingContext2D | null, engine?: BeeEngine): void;
 }
 
 export interface BeeParticleEmitOptions {

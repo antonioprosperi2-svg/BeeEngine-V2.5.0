@@ -12,6 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.10.4] - 2026-10-15
+
+### Fixed
+
+- `BeeTilemap.getWorldAABB` is the whole map, so drawing is not culled on the 32×32 entity box. An empty map or a bad `tileSize` has zero size.
+- `rows` and `cols` follow `tiles`. A missing cell is empty: it is not drawn and it is not solid. `0` stays empty, and the tileset still uses `tile - 1`.
+- `entityCollides` checks every tile under the collider. The right and bottom edges do not count the next tile. No collider, or a side of 0, does not collide.
+- `draw` does nothing without a context or when `tileSize` or `tilesetColumns` is not a positive number. A bad tileset index is not drawn, and the fill color does not stay on the canvas.
+- `examples/tilemap.html` shows a grid larger than 32×32 and a wide body whose center sits on a solid tile.
+
 ## [2.10.3] - 2026-10-12
 
 ### Fixed
