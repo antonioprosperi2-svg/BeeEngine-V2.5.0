@@ -12,6 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.10.5] - 2026-10-15
+
+### Fixed
+
+- `BeeTilemapLoader` treats a layer as solid only when its name is a collision name, or it has a `solid` property set to true. One ordinary layer is not a wall by itself.
+- On a solid layer, any gid other than 0 is a wall after the flip bits are removed. It does not have to be in the tileset.
+- Drawing and lookup use `gid & 0x1FFFFFFF`, so a flipped tile still finds tile 1. A missing `visible` field still draws the layer.
+- Tile width and height fall back separately. `load` without a map, or without a finite size, does not throw. A missing asset or canvas context does not throw.
+- `examples/tiled.html` draws a Tiled ground layer and outlines the collision mesh.
+
 ## [2.10.4] - 2026-10-15
 
 ### Fixed

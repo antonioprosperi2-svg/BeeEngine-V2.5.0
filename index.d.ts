@@ -1996,9 +1996,11 @@ export declare class BeeTilemapLoader {
   constructor(engine: BeeEngine);
 
   preloadAssets(mapJson: any, basePath?: string): Promise<void>;
+  /** Senza json, o senza `width`/`height` finiti: esce e `isLoaded` resta false. */
   load(mapJson: any): void;
   getColliders(): BeeRectCollider[];
-  render(ctx: CanvasRenderingContext2D): void;
+  /** Senza `ctx` non disegna. Un gid con i bit di flip usa la maschera `0x1FFFFFFF`. */
+  render(ctx: CanvasRenderingContext2D | null): void;
 }
 
 export declare class BeeVirtualDPad {

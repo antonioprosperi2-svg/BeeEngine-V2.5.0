@@ -63,6 +63,11 @@ export class BeeTilemapLoader {
      * Parses Tiled JSON structure.
      */
     load(mapJson) {
+        if (!mapJson || !Number.isFinite(mapJson.width) || !Number.isFinite(mapJson.height)) {
+            this.isLoaded = false;
+            return;
+        }
+
         this.mapWidth = mapJson.width;
         this.mapHeight = mapJson.height;
         this.gridCellSize = mapJson.tilewidth || 128;
@@ -72,7 +77,7 @@ export class BeeTilemapLoader {
         if (mapJson.tilesets && mapJson.tilesets.length > 0) {
             mapJson.tilesets.forEach(tileset => {
                 const firstGid = tileset.firstgid || 1;
-                const tileWidth = tileset.tileheight ? tileset.tilewidth : (mapJson.tilewidth || this.gridCellSize);
+                const tileWidth = tileset.tilewidth || mapJson.tilewidth || this.gridCellSize;
                 const tileHeight = tileset.tileheight || mapJson.tileheight || this.gridCellSize;
                 const margin = tileset.margin || 0;
                 const spacing = tileset.spacing || 0;
@@ -134,6 +139,7 @@ export class BeeTilemapLoader {
 
     #processSolidLayer(layer) {
         if (!this.#isSolidLayer(layer)) return;
+        if (!Array.isArray(layer.data)) return;
 
         const data = layer.data;
         const visited = new Uint8Array(this.mapWidth * this.mapHeight);
@@ -152,24 +158,36 @@ export class BeeTilemapLoader {
 
     #isSolidLayer(layer) {
         const layerName = (layer.name || '').toLowerCase();
-        if (this.layers.length === 1) return true;
 
         if (
-            layerName === 'solids' ||
             layerName === 'solid' ||
-            layerName === 'platforms' ||
+            layerName === 'solids' ||
             layerName === 'platform' ||
+            layerName === 'platforms' ||
             layerName === 'terrain' ||
-            layerName === 'walls'
+            layerName === 'walls' ||
+            layerName === 'collision' ||
+            layerName === 'collisions'
         ) {
             return true;
         }
 
-        return (layer.properties || []).some(p => p.name === 'solid' && p.value === true);
+        return (layer.properties || []).some(
+            (p) => p.name === 'solid' && (p.value === true || p.value === 'true')
+        );
+    }
+
+    #maskGid(gid) {
+        if (!Number.isFinite(gid)) return 0;
+        return gid & 0x1FFFFFFF;
+    }
+
+    #isWallGid(gid) {
+        return this.#maskGid(gid) !== 0;
     }
 
     #shouldCreateCollider(data, visited, index) {
-        return data[index] !== 0 && this.tileLookup.has(data[index]) && !visited[index];
+        return this.#isWallGid(data[index]) && !visited[index];
     }
 
     #measureSolidRect(data, visited, startX, startY) {
@@ -177,7 +195,7 @@ export class BeeTilemapLoader {
 
         while (
             startX + w < this.mapWidth &&
-            data[startY * this.mapWidth + (startX + w)] !== 0 &&
+            this.#isWallGid(data[startY * this.mapWidth + (startX + w)]) &&
             !visited[startY * this.mapWidth + (startX + w)]
         ) {
             w++;
@@ -197,7 +215,7 @@ export class BeeTilemapLoader {
         const rowStart = (startY + height) * this.mapWidth + startX;
         for (let k = 0; k < width; k++) {
             const index = rowStart + k;
-            if (data[index] === 0 || visited[index]) {
+            if (!this.#isWallGid(data[index]) || visited[index]) {
                 return false;
             }
         }
@@ -229,71 +247,90 @@ export class BeeTilemapLoader {
     }
 
     #getTexture(tileInfo) {
-        return this.engine.assets.getImage(tileInfo.imageName) ||
-            this.engine.assets.getImage(tileInfo.imagePath) ||
-            this.engine.assets.getImage(encodeURIComponent(tileInfo.imagePath));
+        const assets = this.engine && this.engine.assets;
+        if (!assets || typeof assets.getImage !== 'function') return null;
+
+        return assets.getImage(tileInfo.imageName) ||
+            assets.getImage(tileInfo.imagePath) ||
+            assets.getImage(encodeURIComponent(tileInfo.imagePath));
+    }
+
+    #drawGid(ctx, gid, gridX, gridY) {
+        const tileGid = this.#maskGid(gid);
+        if (tileGid === 0) return;
+
+        const tileInfo = this.tileLookup.get(tileGid);
+        if (!tileInfo) return;
+
+        const texture = this.#getTexture(tileInfo);
+        if (!texture) return;
+
+        const offsetY = this.gridCellSize - tileInfo.height;
+        if (tileInfo.isSpriteSheet) {
+            ctx.drawImage(
+                texture,
+                tileInfo.sx,
+                tileInfo.sy,
+                tileInfo.width,
+                tileInfo.height,
+                gridX,
+                gridY + offsetY,
+                tileInfo.width,
+                tileInfo.height
+            );
+            return;
+        }
+
+        ctx.drawImage(
+            texture,
+            gridX,
+            gridY + offsetY,
+            tileInfo.width,
+            tileInfo.height
+        );
+    }
+
+    #layerVisible(layer) {
+        return layer.visible !== false && Array.isArray(layer.data);
     }
 
     render(ctx) {
-        if (!this.isLoaded) return;
-        const camera = this.engine.camera;
+        if (!ctx || !this.isLoaded) return;
+        const camera = this.engine && this.engine.camera;
 
         if (!camera) {
             this.#renderAll(ctx);
             return;
         }
 
-        const cameraWidth = camera.w ?? camera.width ?? 0;
-        const cameraHeight = camera.h ?? camera.height ?? 0;
+        let viewX = camera.x;
+        let viewY = camera.y;
+        let viewW = camera.w ?? camera.width ?? 0;
+        let viewH = camera.h ?? camera.height ?? 0;
 
-        const startX = Math.max(0, Math.floor(camera.x / this.gridCellSize));
-        const endX = Math.min(this.mapWidth - 1, Math.ceil((camera.x + cameraWidth) / this.gridCellSize));
+        if (typeof camera.getViewBounds === 'function') {
+            const view = camera.getViewBounds();
+            viewX = view.x;
+            viewY = view.y;
+            viewW = view.width;
+            viewH = view.height;
+        }
 
-        const startY = Math.max(0, Math.floor(camera.y / this.gridCellSize));
-        const endY = Math.min(this.mapHeight - 1, Math.ceil((camera.y + cameraHeight) / this.gridCellSize));
+        const startX = Math.max(0, Math.floor(viewX / this.gridCellSize));
+        const endX = Math.min(this.mapWidth - 1, Math.ceil((viewX + viewW) / this.gridCellSize));
+
+        const startY = Math.max(0, Math.floor(viewY / this.gridCellSize));
+        const endY = Math.min(this.mapHeight - 1, Math.ceil((viewY + viewH) / this.gridCellSize));
 
         this.layers.forEach(layer => {
-            if (!layer.visible) return;
+            if (!this.#layerVisible(layer)) return;
 
             const data = layer.data;
 
             for (let y = startY; y <= endY; y++) {
                 for (let x = startX; x <= endX; x++) {
                     const i = y * this.mapWidth + x;
-                    const tileGid = data[i];
-                    if (tileGid === 0) continue;
-
-                    const tileInfo = this.tileLookup.get(tileGid);
-                    if (!tileInfo) continue;
-
-                    const gridX = x * this.gridCellSize;
-                    const gridY = y * this.gridCellSize;
-                    const offsetY = this.gridCellSize - tileInfo.height;
-                    const texture = this.#getTexture(tileInfo);
-
-                    if (texture) {
-                        if (tileInfo.isSpriteSheet) {
-                            ctx.drawImage(
-                                texture,
-                                tileInfo.sx,
-                                tileInfo.sy,
-                                tileInfo.width,
-                                tileInfo.height,
-                                gridX,
-                                gridY + offsetY,
-                                tileInfo.width,
-                                tileInfo.height
-                            );
-                        } else {
-                            ctx.drawImage(
-                                texture,
-                                gridX,
-                                gridY + offsetY,
-                                tileInfo.width,
-                                tileInfo.height
-                            );
-                        }
-                    }
+                    this.#drawGid(ctx, data[i], x * this.gridCellSize, y * this.gridCellSize);
                 }
             }
         });
@@ -301,44 +338,13 @@ export class BeeTilemapLoader {
 
     #renderAll(ctx) {
         this.layers.forEach(layer => {
-            if (!layer.visible) return;
+            if (!this.#layerVisible(layer)) return;
             const data = layer.data;
 
             for (let i = 0; i < data.length; i++) {
-                const tileGid = data[i];
-                if (tileGid === 0) continue;
-
-                const tileInfo = this.tileLookup.get(tileGid);
-                if (!tileInfo) continue;
-
                 const gridX = (i % this.mapWidth) * this.gridCellSize;
                 const gridY = Math.floor(i / this.mapWidth) * this.gridCellSize;
-                const offsetY = this.gridCellSize - tileInfo.height;
-                const texture = this.#getTexture(tileInfo);
-
-                if (texture) {
-                    if (tileInfo.isSpriteSheet) {
-                        ctx.drawImage(
-                            texture,
-                            tileInfo.sx,
-                            tileInfo.sy,
-                            tileInfo.width,
-                            tileInfo.height,
-                            gridX,
-                            gridY + offsetY,
-                            tileInfo.width,
-                            tileInfo.height
-                        );
-                    } else {
-                        ctx.drawImage(
-                            texture,
-                            gridX,
-                            gridY + offsetY,
-                            tileInfo.width,
-                            tileInfo.height
-                        );
-                    }
-                }
+                this.#drawGid(ctx, data[i], gridX, gridY);
             }
         });
     }
