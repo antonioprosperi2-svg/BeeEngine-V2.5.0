@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.10.6] - 2026-10-18
+
+### Fixed
+
+- `BeeButton` reads `input.mouse` from the entity loop. It no longer installs its own listeners.
+- A click fires once on release over the current rectangle. Release outside, a hidden button, or an inactive button does not fire. Changing `width` after construction is the hit area.
+- `examples/button.html` shows the on-screen button. New menus stay on `BeeUIButton`.
+
 ## [2.10.5] - 2026-10-15
 
 ### Fixed

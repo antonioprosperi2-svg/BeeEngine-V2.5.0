@@ -1,35 +1,7 @@
 import { BeeEntity } from '../core/BeeEntity.js';
+import { BEE_DRAW } from '../graphics/BeeLayer.js';
+
 export class BeeButton extends BeeEntity {
-    static listen(canvas) {
-        function updateMousePosition(event) {
-            const rect = canvas.getBoundingClientRect();
-
-            BeeButton.mouse.x = (event.clientX - rect.left) * (canvas.width / rect.width);
-            BeeButton.mouse.y = (event.clientY - rect.top) * (canvas.height / rect.height);
-        }
-
-        canvas.addEventListener("mousemove", event => {
-            updateMousePosition(event);
-        });
-
-        canvas.addEventListener("mousedown", event => {
-            updateMousePosition(event);
-            BeeButton.mouse.down = true;
-            BeeButton.mouse.pressed = true;
-        });
-
-        canvas.addEventListener("mouseup", event => {
-            updateMousePosition(event);
-            BeeButton.mouse.down = false;
-            BeeButton.mouse.released = true;
-        });
-    }
-
-    static endFrame() {
-        BeeButton.mouse.pressed = false;
-        BeeButton.mouse.released = false;
-    }
-
     constructor({
         x = 0,
         y = 0,
@@ -55,31 +27,42 @@ export class BeeButton extends BeeEntity {
 
         this.hover = false;
         this.down = false;
+        this.drawLayer = BEE_DRAW.UI;
 
         this.addRectCollider();
     }
 
-    update(dt, scene) {
-        const mouse = BeeButton.mouse;
+    update(dt, input, engine) {
+        if (this.destroyed || this.active === false) {
+            this.hover = false;
+            this.down = false;
+            super.update(dt, input, engine);
+            return;
+        }
 
-        this.hover = this.collider.containsPoint(mouse.x, mouse.y);
+        const mouse = input && input.mouse;
+        const over = this.#contains(mouse);
+        this.hover = !!this.visible && over;
 
-        if (this.hover && mouse.pressed) {
+        if (this.hover && mouse.wasPressed) {
             this.down = true;
         }
 
-        if (this.down && mouse.released) {
-            if (this.hover && this.onClick) {
-                this.onClick(this, scene);
+        const released = !mouse || mouse.pressed !== true;
+        if (!this.visible) {
+            this.down = false;
+        } else if (this.down && released) {
+            if (this.hover && typeof this.onClick === 'function') {
+                this.onClick(this);
             }
-
             this.down = false;
         }
 
-        super.update(dt, scene);
+        super.update(dt, input, engine);
     }
 
     draw(ctx) {
+        if (!ctx) return;
         if (!this.visible) return;
 
         let bg = this.background;
@@ -110,17 +93,12 @@ export class BeeButton extends BeeEntity {
 
         ctx.restore();
     }
+
+    #contains(mouse) {
+        if (!mouse || !Number.isFinite(mouse.x) || !Number.isFinite(mouse.y)) return false;
+        return mouse.x >= this.worldX
+            && mouse.y >= this.worldY
+            && mouse.x <= this.worldX + this.width
+            && mouse.y <= this.worldY + this.height;
+    }
 }
-
-BeeButton.mouse = {
-    x: 0,
-    y: 0,
-    down: false,
-    pressed: false,
-    released: false
-};
-
-/** 🌟 * Classe BeeButton: Rappresenta un pulsante interattivo su schermo (eredita/usa BeeEntity).
- * Gestisce l'area cliccabile, gli stati visivi (normale, hover, premuto) e 
- * scatena l'evento onClick per permettere l'interazione nei menu o nella UI.
- */

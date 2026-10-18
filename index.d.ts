@@ -925,7 +925,7 @@ export interface BeeButtonOptions {
   hoverBackground?: string;
   pressedBackground?: string;
   color?: string;
-  onClick?: (button: BeeButton, scene?: unknown) => void;
+  onClick?: (button: BeeButton) => void;
 }
 
 export declare class BeeButton extends BeeEntity {
@@ -941,8 +941,8 @@ export declare class BeeButton extends BeeEntity {
 
   constructor(options?: BeeButtonOptions);
 
-  update(dt: number, scene?: unknown): void;
-  draw(ctx: CanvasRenderingContext2D): void;
+  update(dt: number, input?: BeeInput, engine?: BeeEngine): void;
+  draw(ctx: CanvasRenderingContext2D | null): void;
 }
 
 export interface BeeHUDOptions {
