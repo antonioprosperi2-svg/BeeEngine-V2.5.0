@@ -12,6 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.10.7] - 2026-10-21
+
+### Fixed
+
+- `BeeInput` keeps keyboard keys and `setKey` apart. `isPressed` is true when either is down. `wasPressed` fires only on the frame a key goes down. `endFrame` clears those edges, not the held keys.
+- Releasing a key clears the character remembered at press, so `a` does not stay down when the key comes back as `A`. Blur clears the keyboard and leaves a joystick key held.
+- Mouse move and release follow the pointer on the window, in canvas pixels, including outside the canvas. A mouse event that comes from a touch is ignored. The last finger uses `changedTouches`, then the button is up.
+- `getCanvasPosition` returns `0, 0` when the canvas box has no size. `destroy` removes the listeners, and `BeeEngine.destroy` calls it.
+
 ## [2.10.6] - 2026-10-18
 
 ### Fixed

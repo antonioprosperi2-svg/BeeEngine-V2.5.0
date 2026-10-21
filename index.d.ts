@@ -304,6 +304,7 @@ export declare class BeeInput {
   keys: Record<string, boolean>;
   pressed: Record<string, boolean>;
   mouse: BeeMouseState;
+  touches: { id: number; x: number; y: number }[];
 
   constructor(canvas: HTMLCanvasElement);
 
@@ -312,6 +313,7 @@ export declare class BeeInput {
   wasPressed(key: string): boolean;
   setKey(key: string, value: boolean): void;
   endFrame(): void;
+  destroy(): void;
 }
 
 // ---------------------------------------------------------------------------

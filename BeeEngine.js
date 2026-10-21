@@ -451,6 +451,9 @@ export class BeeEngine {
             this._audioUnlock = null;
         }
 
+        if (this.input && typeof this.input.destroy === 'function') {
+            this.input.destroy();
+        }
         if (this.debug && typeof this.debug.destroy === 'function') {
             this.debug.destroy();
         }
