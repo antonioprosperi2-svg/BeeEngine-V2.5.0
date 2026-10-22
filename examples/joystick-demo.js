@@ -12,10 +12,10 @@ hero.draw = function drawHero(ctx) {
 };
 hero.update = function moveHero(dt, input) {
     if (!input) return;
-    if (input.isPressed('ArrowLeft')) this.worldX -= 180 * dt;
-    if (input.isPressed('ArrowRight')) this.worldX += 180 * dt;
-    if (input.isPressed('ArrowUp')) this.worldY -= 180 * dt;
-    if (input.isPressed('ArrowDown')) this.worldY += 180 * dt;
+    if (input.isPressed('ArrowLeft') || input.isPressed('KeyA')) this.worldX -= 180 * dt;
+    if (input.isPressed('ArrowRight') || input.isPressed('KeyD')) this.worldX += 180 * dt;
+    if (input.isPressed('ArrowUp') || input.isPressed('KeyW')) this.worldY -= 180 * dt;
+    if (input.isPressed('ArrowDown') || input.isPressed('KeyS')) this.worldY += 180 * dt;
 };
 
 const scene = {
@@ -28,10 +28,10 @@ const scene = {
 
     draw(ctx) {
         const names = [];
-        if (gioco.input.isPressed('ArrowLeft')) names.push('sinistra');
-        if (gioco.input.isPressed('ArrowRight')) names.push('destra');
-        if (gioco.input.isPressed('ArrowUp')) names.push('su');
-        if (gioco.input.isPressed('ArrowDown')) names.push('giù');
+        if (gioco.input.isPressed('ArrowLeft') || gioco.input.isPressed('KeyA')) names.push('sinistra');
+        if (gioco.input.isPressed('ArrowRight') || gioco.input.isPressed('KeyD')) names.push('destra');
+        if (gioco.input.isPressed('ArrowUp') || gioco.input.isPressed('KeyW')) names.push('su');
+        if (gioco.input.isPressed('ArrowDown') || gioco.input.isPressed('KeyS')) names.push('giù');
         ctx.fillStyle = '#ffe08a';
         ctx.font = '20px monospace';
         ctx.textAlign = 'left';

@@ -28,11 +28,20 @@ export class BeeJoystick {
         this.onTouchEnd = (e) => this.handleTouchEnd(e);
         this.onResize = () => this.updateLayout();
 
+        this.onMouseDown = (e) => this.handleMouseDown(e);
+        this.onMouseMove = (e) => this.handleMouseMove(e);
+        this.onMouseUp = (e) => this.handleMouseUp(e);
+        this.onMouseOut = (e) => this.handleMouseOut(e);
+
         this.canvas.addEventListener('touchstart', this.onTouchStart, { passive: false });
         this.canvas.addEventListener('touchmove', this.onTouchMove, { passive: false });
         this.canvas.addEventListener('touchend', this.onTouchEnd, { passive: false });
         this.canvas.addEventListener('touchcancel', this.onTouchEnd, { passive: false });
+        this.canvas.addEventListener('mousedown', this.onMouseDown);
 
+        window.addEventListener('mousemove', this.onMouseMove);
+        window.addEventListener('mouseup', this.onMouseUp);
+        window.addEventListener('mouseout', this.onMouseOut);
         window.addEventListener('resize', this.onResize);
     }
 
@@ -128,6 +137,49 @@ export class BeeJoystick {
         }
     }
 
+    fromTouch(e) {
+        return !!(e && e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents);
+    }
+
+    handleMouseDown(e) {
+        if (this.fromTouch(e)) return;
+        if (e.button != null && e.button !== 0) return;
+
+        this.updateLayout();
+        if (this.active) return;
+
+        const { x, y } = this.getCanvasCoords(e);
+        if (!this.isInsideJoystick(x, y)) return;
+
+        this.active = true;
+        this.touchId = null;
+        this.updateStickPosition(x, y);
+    }
+
+    handleMouseMove(e) {
+        if (this.fromTouch(e)) return;
+        if (!this.active || this.touchId != null) return;
+
+        const { x, y } = this.getCanvasCoords(e);
+        this.updateStickPosition(x, y);
+    }
+
+    handleMouseUp(e) {
+        if (this.fromTouch(e)) return;
+        if (!this.active || this.touchId != null) return;
+
+        const { x, y } = this.getCanvasCoords(e);
+        this.updateStickPosition(x, y);
+        this.resetJoystick();
+    }
+
+    handleMouseOut(e) {
+        if (this.fromTouch(e)) return;
+        if (e.relatedTarget || e.toElement) return;
+        if (!this.active || this.touchId != null) return;
+        this.resetJoystick();
+    }
+
     updateStickPosition(x, y) {
         const dx = x - this.baseX;
         const dy = y - this.baseY;
@@ -153,10 +205,19 @@ export class BeeJoystick {
     updateInput(dx, dy) {
         if (!this.input || !this.input.setKey) return;
 
-        this.input.setKey('ArrowLeft', dx < -this.deadZone);
-        this.input.setKey('ArrowRight', dx > this.deadZone);
-        this.input.setKey('ArrowUp', dy < -this.deadZone);
-        this.input.setKey('ArrowDown', dy > this.deadZone);
+        const left = dx < -this.deadZone;
+        const right = dx > this.deadZone;
+        const up = dy < -this.deadZone;
+        const down = dy > this.deadZone;
+
+        this.input.setKey('ArrowLeft', left);
+        this.input.setKey('KeyA', left);
+        this.input.setKey('ArrowRight', right);
+        this.input.setKey('KeyD', right);
+        this.input.setKey('ArrowUp', up);
+        this.input.setKey('KeyW', up);
+        this.input.setKey('ArrowDown', down);
+        this.input.setKey('KeyS', down);
     }
 
     resetJoystick() {
@@ -173,9 +234,13 @@ export class BeeJoystick {
         if (!this.input || !this.input.setKey) return;
 
         this.input.setKey('ArrowLeft', false);
+        this.input.setKey('KeyA', false);
         this.input.setKey('ArrowRight', false);
+        this.input.setKey('KeyD', false);
         this.input.setKey('ArrowUp', false);
+        this.input.setKey('KeyW', false);
         this.input.setKey('ArrowDown', false);
+        this.input.setKey('KeyS', false);
     }
 
     draw(ctx) {
@@ -220,7 +285,11 @@ export class BeeJoystick {
         this.canvas.removeEventListener('touchmove', this.onTouchMove);
         this.canvas.removeEventListener('touchend', this.onTouchEnd);
         this.canvas.removeEventListener('touchcancel', this.onTouchEnd);
+        this.canvas.removeEventListener('mousedown', this.onMouseDown);
 
+        window.removeEventListener('mousemove', this.onMouseMove);
+        window.removeEventListener('mouseup', this.onMouseUp);
+        window.removeEventListener('mouseout', this.onMouseOut);
         window.removeEventListener('resize', this.onResize);
 
         this.releaseKeys();

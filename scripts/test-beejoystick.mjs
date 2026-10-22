@@ -139,4 +139,78 @@ function none(input) {
     assert(input.keys.ArrowLeft !== true, 'touchstart dopo destroy non accende ArrowLeft');
 }
 
+function mouse(x, y, extra) {
+    return { clientX: x, clientY: y, button: 0, ...extra };
+}
+
+function eightOff(input) {
+    return input.keys.ArrowLeft !== true
+        && input.keys.KeyA !== true
+        && input.keys.ArrowRight !== true
+        && input.keys.KeyD !== true
+        && input.keys.ArrowUp !== true
+        && input.keys.KeyW !== true
+        && input.keys.ArrowDown !== true
+        && input.keys.KeyS !== true;
+}
+
+{
+    const canvas = canvasOf(800, 480);
+    const input = fakeInput();
+    const joy = new BeeJoystick(canvas, input);
+    canvas.dispatch('mousedown', mouse(joy.baseX, joy.baseY));
+    window.dispatch('mousemove', mouse(joy.baseX - 20, joy.baseY));
+    assert(input.keys.ArrowLeft === true && input.keys.KeyA === true, 'mouse sinistra: ArrowLeft e KeyA');
+    assert(input.keys.ArrowRight !== true && input.keys.KeyD !== true, 'mouse sinistra: niente destra');
+    assert(input.keys.ArrowUp !== true && input.keys.KeyW !== true, 'mouse sinistra: niente su');
+    assert(input.keys.ArrowDown !== true && input.keys.KeyS !== true, 'mouse sinistra: niente giù');
+    joy.destroy();
+}
+
+{
+    const canvas = canvasOf(800, 480);
+    const input = fakeInput();
+    const joy = new BeeJoystick(canvas, input);
+    canvas.dispatch('mousedown', mouse(joy.baseX, joy.baseY));
+    window.dispatch('mousemove', mouse(joy.baseX - 20, joy.baseY));
+    window.dispatch('mouseup', mouse(joy.baseX - 40, joy.baseY));
+    assert(joy.active === false, 'mouseup spegne active');
+    assert(eightOff(input), 'mouseup spegne le otto');
+    joy.destroy();
+}
+
+{
+    const canvas = canvasOf(800, 480);
+    const input = fakeInput();
+    const joy = new BeeJoystick(canvas, input);
+    canvas.dispatch('mousedown', mouse(joy.baseX, joy.baseY, {
+        sourceCapabilities: { firesTouchEvents: true }
+    }));
+    assert(joy.active === false, 'mousedown da touch non parte');
+    joy.destroy();
+}
+
+{
+    const canvas = canvasOf(800, 480);
+    const input = fakeInput();
+    const joy = new BeeJoystick(canvas, input);
+    canvas.dispatch('touchstart', touch(1, joy.baseX - 20, joy.baseY));
+    assert(input.keys.ArrowLeft === true && input.keys.KeyA === true, 'il touch accende ArrowLeft e KeyA');
+    assert(input.keys.ArrowRight !== true && input.keys.KeyD !== true, 'il touch non accende destra');
+    assert(input.keys.ArrowUp !== true && input.keys.KeyW !== true, 'il touch non accende su');
+    assert(input.keys.ArrowDown !== true && input.keys.KeyS !== true, 'il touch non accende giù');
+    joy.destroy();
+}
+
+{
+    const canvas = canvasOf(800, 480);
+    const input = fakeInput();
+    const joy = new BeeJoystick(canvas, input);
+    joy.destroy();
+    assert(canvas.count('mousedown') === 0, 'destroy toglie mousedown');
+    canvas.dispatch('mousedown', mouse(joy.baseX, joy.baseY));
+    assert(joy.active === false, 'mousedown dopo destroy non parte');
+    assert(input.keys.ArrowLeft !== true && input.keys.KeyA !== true, 'mousedown dopo destroy non accende tasti');
+}
+
 console.log('BeeJoystick tests ok');

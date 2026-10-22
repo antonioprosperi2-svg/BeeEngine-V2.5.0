@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.10.9] - 2026-10-22
+
+### Fixed
+
+- On a computer, `BeeJoystick` drags with the left mouse button and keeps following the pointer outside the base. A finger already on the stick blocks the mouse. A mouse event that comes from a touch is ignored.
+- The stick sets each arrow together with its letter: `ArrowLeft`/`KeyA`, `ArrowRight`/`KeyD`, `ArrowUp`/`KeyW`, `ArrowDown`/`KeyS`. Release clears all eight. The touch path is unchanged.
+- `examples/joystick.html` moves the hero with an arrow or the matching letter.
+
 ## [2.10.8] - 2026-10-22
 
 ### Fixed
