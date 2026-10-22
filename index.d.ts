@@ -1812,19 +1812,22 @@ export declare class BeeMenuScene implements BeeScene {
 
 export declare class BeeJoystick {
   canvas: HTMLCanvasElement;
-  x: number;
-  y: number;
+  input: BeeInput;
+  margin: number;
   radius: number;
-  handleRadius: number;
+  knobRadius: number;
+  deadZone: number;
+  baseX: number;
+  baseY: number;
+  stickX: number;
+  stickY: number;
   active: boolean;
-  angle: number;
-  distance: number;
+  touchId: number | null;
 
   constructor(canvas: HTMLCanvasElement, input: BeeInput);
 
-  update(): void;
-  draw(ctx: CanvasRenderingContext2D): void;
-  getDir(): { x: number; y: number };
+  draw(ctx: CanvasRenderingContext2D | null): void;
+  destroy(): void;
 }
 
 export declare class BeeSpriteSheet {
@@ -2323,7 +2326,7 @@ export declare class BeeEngine {
   isRunning: boolean;
   isPaused: boolean;
   animationFrameId: number | null;
-  touchControls?: BeeTouchControls | BeeJoystick;
+  touchControls: BeeTouchControls | BeeJoystick | null;
 
   update?: BeeGameLoopCallback;
   render?: BeeRenderCallback;
@@ -2365,7 +2368,7 @@ export declare class BeeEngine {
   pool<T = any>(name: string): BeePool<T> | null;
   spawn<T = any>(name: string, ...args: any[]): T | null;
 
-  enableJoystick(options?: object): BeeJoystick;
+  enableJoystick(): BeeJoystick;
   enableTouchControls(): BeeTouchControls;
   enableLadybug(options?: BeeLadybugOptions): BeeLadybug;
 

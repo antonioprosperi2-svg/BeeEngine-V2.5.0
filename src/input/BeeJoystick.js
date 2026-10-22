@@ -179,6 +179,7 @@ export class BeeJoystick {
     }
 
     draw(ctx) {
+        if (!ctx) return;
         this.updateLayout();
 
         ctx.save();

@@ -182,7 +182,7 @@ export class BeeEngine {
         return this.touchControls;
     }
 
-    enableJoystick(options = {}) {
+    enableJoystick() {
         if (this.touchControls && typeof this.touchControls.destroy === 'function') {
             this.touchControls.destroy();
         }
@@ -451,6 +451,10 @@ export class BeeEngine {
             this._audioUnlock = null;
         }
 
+        if (this.touchControls && typeof this.touchControls.destroy === 'function') {
+            this.touchControls.destroy();
+        }
+        this.touchControls = null;
         if (this.input && typeof this.input.destroy === 'function') {
             this.input.destroy();
         }

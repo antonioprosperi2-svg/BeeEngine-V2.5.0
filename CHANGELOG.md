@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.10.8] - 2026-10-22
+
+### Fixed
+
+- `BeeJoystick.draw` returns when there is no canvas context. The finger behavior is unchanged.
+- `BeeEngine.destroy` removes the joystick listeners and sets `touchControls` to null. `enableJoystick()` takes no options.
+- `examples/joystick.html` shows the on-screen stick. A touch inside the base sets one arrow.
+
 ## [2.10.7] - 2026-10-21
 
 ### Fixed
