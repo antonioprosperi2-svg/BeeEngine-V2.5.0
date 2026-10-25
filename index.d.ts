@@ -2035,6 +2035,7 @@ export declare class BeeTouchButton {
   radius: number;
   label: string;
   isPressed: boolean;
+  pointerId: number | null;
 
   constructor(options: {
     canvas: HTMLCanvasElement;
@@ -2044,7 +2045,8 @@ export declare class BeeTouchButton {
     label?: string;
   });
 
-  render(ctx: CanvasRenderingContext2D): void;
+  render(ctx: CanvasRenderingContext2D | null): void;
+  destroy(): void;
 }
 
 // ---------------------------------------------------------------------------

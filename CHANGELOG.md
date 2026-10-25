@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.10.10] - 2026-10-25
+
+### Fixed
+
+- `BeeTouchButton` is still a circle the game draws and reads. A pointer inside the radius presses it, including the right button. Release and cancel clear only that pointer.
+- A canvas box with no size is not a hit and does not throw. `render` returns without a context. `destroy` removes the listeners.
+- `examples/touchbutton.html` shows the circle. Holding it makes the square jump.
+
 ## [2.10.9] - 2026-10-22
 
 ### Fixed

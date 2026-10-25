@@ -7,7 +7,10 @@ export class BeeTouchButton {
      * @param {number} [config.radius=30] - Raggio del pulsante
      * @param {string} [config.label="A"] - Testo sul pulsante
      */
-    constructor({ canvas, x, y, radius = 30, label = "A" }) {
+    constructor(config) {
+        const { canvas, x, y, radius = 30, label = "A" } = config || {};
+        if (!canvas) throw new Error('BeeTouchButton: canvas required');
+
         this.canvas = canvas;
         this.x = x;
         this.y = y;
@@ -21,18 +24,10 @@ export class BeeTouchButton {
     }
 
     initEvents() {
-        const getPos = (e) => {
-            const rect = this.canvas.getBoundingClientRect();
-            const scaleX = this.canvas.width / rect.width;
-            const scaleY = this.canvas.height / rect.height;
-            return {
-                x: (e.clientX - rect.left) * scaleX,
-                y: (e.clientY - rect.top) * scaleY
-            };
-        };
+        this.onPointerDown = (e) => {
+            const pos = this.canvasPoint(e);
+            if (!pos) return;
 
-        this.canvas.addEventListener('pointerdown', (e) => {
-            const pos = getPos(e);
             const dx = pos.x - this.x;
             const dy = pos.y - this.y;
 
@@ -43,23 +38,37 @@ export class BeeTouchButton {
                     try { this.canvas.setPointerCapture(e.pointerId); } catch (err) { }
                 }
             }
-        });
-
-        const stop = (e) => {
-            if (e.pointerId === this.pointerId) {
-                this.isPressed = false;
-                if (this.canvas.releasePointerCapture) {
-                    try { this.canvas.releasePointerCapture(e.pointerId); } catch (err) { }
-                }
-                this.pointerId = null;
-            }
         };
 
-        window.addEventListener('pointerup', stop);
-        window.addEventListener('pointercancel', stop);
+        this.onPointerUp = (e) => this.release(e);
+
+        this.canvas.addEventListener('pointerdown', this.onPointerDown);
+        window.addEventListener('pointerup', this.onPointerUp);
+        window.addEventListener('pointercancel', this.onPointerUp);
+    }
+
+    canvasPoint(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+        if (!rect.width || !rect.height || !Number.isFinite(scaleX) || !Number.isFinite(scaleY)) return null;
+        return {
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY
+        };
+    }
+
+    release(e) {
+        if (e.pointerId !== this.pointerId) return;
+        this.isPressed = false;
+        if (this.canvas.releasePointerCapture) {
+            try { this.canvas.releasePointerCapture(e.pointerId); } catch (err) { }
+        }
+        this.pointerId = null;
     }
 
     render(ctx) {
+        if (!ctx) return;
         ctx.save();
 
         // Sfondo del pulsante (cambia colore se premuto)
@@ -80,5 +89,13 @@ export class BeeTouchButton {
         ctx.fillText(this.label, this.x, this.y);
 
         ctx.restore();
+    }
+
+    destroy() {
+        this.canvas.removeEventListener('pointerdown', this.onPointerDown);
+        window.removeEventListener('pointerup', this.onPointerUp);
+        window.removeEventListener('pointercancel', this.onPointerUp);
+        this.isPressed = false;
+        this.pointerId = null;
     }
 }
