@@ -3,15 +3,15 @@
   <img src="https://beeenginejs.com/wp-content/uploads/2026/10/bee-animated.gif" alt="BeeEngine Logo" width="900" />
 </p>
 
-# 🐝 Motore di gioco 2D BeeEngine (v2.11.0 Professional)
+# 🐝 Motore di gioco 2D BeeEngine (v2.11.1 Professional)
 
 BeeEngine è un motore di gioco 2D leggero, modulare e altamente ottimizzato scritto in puro JavaScript moderno (ES Modules) per HTML5 Canvas.
 
 ## 🆕 Novità
 
+* **2.11.1** — `BeeTouchControls`: il dito che scivola da un pulsante all'altro rilascia il tasto, due dita sullo stesso pulsante lo tengono finché non le alzi tutte e due, l'azione scrive `Space`, `destroy` toglie davvero i listener. Demo: `examples/touchcontrols.html`.
 * **2.11.0** — nuovo plugin `BeeDialogue` (alberi di dialogo con scelte, locale opzionale, salvataggio): il motore non lo importa. Demo: `examples/dialogue.html`.
 * **2.10.10** — `BeeTouchButton`: il cerchio si preme col puntatore dentro il raggio e `destroy` toglie i listener. Demo: `examples/touchbutton.html`.
-* **2.10.9** — `BeeJoystick`: sul PC il pomello si trascina col mouse e lo stick accende anche WASD; il dito resta. Demo: `examples/joystick.html`.
 
 Storico completo, dalla versione più recente alla più vecchia: [CHANGELOG.md](CHANGELOG.md).
 
@@ -71,7 +71,7 @@ I moduli con un contratto da spiegare hanno la loro sezione più sotto. Una demo
 | `BeeInput` | tastiera, mouse e `setKey`; `wasPressed` sul frame di pressione | tutte le demo |
 | `BeeButton` | pulsante a schermo che legge `input.mouse` | `examples/button.html` |
 | `BeeJoystick` | stick analogico su schermo (touch e mouse) | `examples/joystick.html` |
-| `BeeTouchControls` | attiva joystick e pulsanti con `enableJoystick()` | `examples/joystick.html` |
+| `BeeTouchControls` | croce direzionale e pulsante azione su schermo, con `enableTouchControls()` (non `enableJoystick()`, che crea `BeeJoystick`) | `examples/touchcontrols.html` |
 | `BeeVirtualDPad` | croce direzionale a 4 o 8 direzioni | — |
 | `BeeTouchButton` | pulsante tattile rotondo con etichetta | `examples/touchbutton.html` |
 

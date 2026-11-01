@@ -12,6 +12,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.11.1] - 2026-11-01
+
+### Fixed
+
+- `BeeTouchControls`: a finger that slides from one button to another releases the first key, and a key no longer stays down after `touchend`. A key is released only when no finger is left on any button that sets it, so two fingers on the same button keep it down until both are up.
+- The action button sets `Space`, which `BeePlayer` and `BeeMenuScene` read, and still sets `' '` as well. The arrows are unchanged.
+- `destroy()` removes the four touch listeners as well as `resize`, releases the keys that are held, and clears `activeTouches`. Calling it twice is safe, so `enableTouchControls()` no longer leaves two live instances on the canvas.
+- The constructor throws `BeeTouchControls: canvas required` or `BeeTouchControls: input required`. `getCanvasCoords` returns `null` for a canvas with no size or a scale that is not finite, and that touch is ignored instead of throwing.
+- `README.md` and this file said `enableJoystick()` turns on `BeeTouchControls`. It creates `BeeJoystick`; `enableTouchControls()` creates `BeeTouchControls`.
+- `index.d.ts` declares the `BeeTouchControls` class.
+
+### Added
+
+- `examples/touchcontrols.html` shows the direction pad and the action button, with the keys they set.
+
 ## [2.11.0] - 2026-11-01
 
 ### Added
@@ -272,7 +287,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Mobile controls: `gioco.enableJoystick()` turns on the analog joystick and the programmable buttons (`BeeJoystick` and `BeeTouchControls`) with a single call, with built-in handling for every touch screen.
+- Mobile controls: `gioco.enableJoystick()` turns on the analog joystick (`BeeJoystick`) and `gioco.enableTouchControls()` turns on the on-screen direction pad and action button (`BeeTouchControls`), each with a single call, with built-in handling for every touch screen.
 - `BeeVirtualDPad`: a configurable direction pad with 4 or 8 directions (`eightWay: false/true`), for precise retro or platform movement.
 - `BeeTouchButton`: a round touch button with a customizable radius and label (for example "A" to jump, "B" to shoot).
 - `BeeSpriteSheet` and `BeeTilemapLoader`: simpler loading and cropping from complex sprite sheets, and smooth asynchronous loading of game levels.

@@ -1,17 +1,24 @@
 export class BeeTouchControls {
+    #destroyed = false;
+
     constructor(canvas, input) {
+        if (!canvas) throw new Error('BeeTouchControls: canvas required');
+        if (!input || typeof input.setKey !== 'function') throw new Error('BeeTouchControls: input required');
+
         this.canvas = canvas;
         this.input = input;
 
         this.btnSize = 50;
         this.margin = 20;
 
+        // `key` è il nome principale; `keys` sono tutti i tasti che il pulsante accende.
+        // L'azione scrive 'Space' (letto da BeePlayer e BeeMenuScene) e ' ' per compatibilità.
         this.buttons = {
-            left: { key: 'ArrowLeft', x: 0, y: 0 },
-            right: { key: 'ArrowRight', x: 0, y: 0 },
-            up: { key: 'ArrowUp', x: 0, y: 0 },
-            down: { key: 'ArrowDown', x: 0, y: 0 },
-            action: { key: ' ', x: 0, y: 0 }
+            left: { key: 'ArrowLeft', keys: ['ArrowLeft'], x: 0, y: 0 },
+            right: { key: 'ArrowRight', keys: ['ArrowRight'], x: 0, y: 0 },
+            up: { key: 'ArrowUp', keys: ['ArrowUp'], x: 0, y: 0 },
+            down: { key: 'ArrowDown', keys: ['ArrowDown'], x: 0, y: 0 },
+            action: { key: 'Space', keys: ['Space', ' '], x: 0, y: 0 }
         };
 
         this.activeTouches = {};
@@ -21,10 +28,58 @@ export class BeeTouchControls {
         this.onResize = () => this.updatePositions();
         window.addEventListener('resize', this.onResize);
 
-        canvas.addEventListener('touchstart', (e) => this.handleTouch(e), { passive: false });
-        canvas.addEventListener('touchmove', (e) => this.handleTouch(e), { passive: false });
-        canvas.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
-        canvas.addEventListener('touchcancel', (e) => this.handleTouchEnd(e), { passive: false });
+        this.onTouchStart = (e) => this.handleTouch(e);
+        this.onTouchMove = (e) => this.handleTouch(e);
+        this.onTouchEnd = (e) => this.handleTouchEnd(e);
+        this.onTouchCancel = (e) => this.handleTouchEnd(e);
+        canvas.addEventListener('touchstart', this.onTouchStart, { passive: false });
+        canvas.addEventListener('touchmove', this.onTouchMove, { passive: false });
+        canvas.addEventListener('touchend', this.onTouchEnd, { passive: false });
+        canvas.addEventListener('touchcancel', this.onTouchCancel, { passive: false });
+    }
+
+    #keysOf(name) {
+        const b = this.buttons[name];
+        if (!b) return [];
+        if (Array.isArray(b.keys) && b.keys.length > 0) return b.keys;
+        return b.key ? [b.key] : [];
+    }
+
+    /**
+     * Allinea i tasti virtuali ai tocchi correnti. Un tasto si rilascia solo quando
+     * nessun dito è più su nessun pulsante che lo accende.
+     */
+    #sync(touches) {
+        const next = {};
+        if (touches) {
+            for (let i = 0; i < touches.length; i++) {
+                const touch = touches[i];
+                const pos = this.getCanvasCoords(touch);
+                if (!pos) continue;
+                const name = this.getButtonAt(pos.x, pos.y);
+                if (name) next[touch.identifier] = name;
+            }
+        }
+
+        const before = new Set();
+        for (const id in this.activeTouches) {
+            const keys = this.#keysOf(this.activeTouches[id]);
+            for (let i = 0; i < keys.length; i++) before.add(keys[i]);
+        }
+        const now = new Set();
+        for (const id in next) {
+            const keys = this.#keysOf(next[id]);
+            for (let i = 0; i < keys.length; i++) now.add(keys[i]);
+        }
+
+        for (const key of before) {
+            if (!now.has(key)) this.input.setKey(key, false);
+        }
+        for (const key of now) {
+            this.input.setKey(key, true);
+        }
+
+        this.activeTouches = next;
     }
 
     updatePositions() {
@@ -50,15 +105,21 @@ export class BeeTouchControls {
         this.buttons.action.y = h - this.margin - r;
     }
 
+    /** Coordinate canvas del tocco, oppure `null` se il canvas non ha dimensione o il tocco non è valido. */
     getCanvasCoords(touch) {
+        if (!touch) return null;
         const rect = this.canvas.getBoundingClientRect();
+        if (!rect || !rect.width || !rect.height) return null;
         const canvasWidth = this.canvas.width || rect.width;
         const canvasHeight = this.canvas.height || rect.height;
+        const sx = canvasWidth / rect.width;
+        const sy = canvasHeight / rect.height;
+        if (!Number.isFinite(sx) || !Number.isFinite(sy)) return null;
 
-        return {
-            x: (touch.clientX - rect.left) * (canvasWidth / rect.width),
-            y: (touch.clientY - rect.top) * (canvasHeight / rect.height)
-        };
+        const x = (touch.clientX - rect.left) * sx;
+        const y = (touch.clientY - rect.top) * sy;
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+        return { x, y };
     }
 
     getButtonAt(x, y) {
@@ -74,40 +135,15 @@ export class BeeTouchControls {
     }
 
     handleTouch(e) {
+        if (this.#destroyed || !e) return;
         if (e.cancelable) e.preventDefault();
-        const stillActive = {};
-
-        for (let touch of e.touches) {
-            const { x, y } = this.getCanvasCoords(touch);
-            const btnName = this.getButtonAt(x, y);
-            if (btnName) stillActive[touch.identifier] = btnName;
-        }
-
-        for (let id in this.activeTouches) {
-            if (!stillActive[id]) this.input.setKey(this.buttons[this.activeTouches[id]].key, false);
-        }
-        for (let id in stillActive) {
-            this.input.setKey(this.buttons[stillActive[id]].key, true);
-        }
-
-        this.activeTouches = stillActive;
+        this.#sync(e.touches);
     }
 
     handleTouchEnd(e) {
+        if (this.#destroyed || !e) return;
         if (e.cancelable) e.preventDefault();
-        const stillActive = {};
-
-        for (let touch of e.touches) {
-            const { x, y } = this.getCanvasCoords(touch);
-            const btnName = this.getButtonAt(x, y);
-            if (btnName) stillActive[touch.identifier] = btnName;
-        }
-
-        for (let id in this.activeTouches) {
-            if (!stillActive[id]) this.input.setKey(this.buttons[this.activeTouches[id]].key, false);
-        }
-
-        this.activeTouches = stillActive;
+        this.#sync(e.touches);
     }
 
     draw(ctx) {
@@ -141,6 +177,19 @@ export class BeeTouchControls {
     }
 
     destroy() {
+        if (this.#destroyed) return;
+        this.#destroyed = true;
+
         window.removeEventListener('resize', this.onResize);
+        this.canvas.removeEventListener('touchstart', this.onTouchStart, { passive: false });
+        this.canvas.removeEventListener('touchmove', this.onTouchMove, { passive: false });
+        this.canvas.removeEventListener('touchend', this.onTouchEnd, { passive: false });
+        this.canvas.removeEventListener('touchcancel', this.onTouchCancel, { passive: false });
+
+        for (const id in this.activeTouches) {
+            const keys = this.#keysOf(this.activeTouches[id]);
+            for (let i = 0; i < keys.length; i++) this.input.setKey(keys[i], false);
+        }
+        this.activeTouches = {};
     }
 }

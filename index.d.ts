@@ -1830,6 +1830,45 @@ export declare class BeeJoystick {
   destroy(): void;
 }
 
+export interface BeeTouchControlsButton {
+  /** Tasto principale. Per `action` è `'Space'`. */
+  key: string;
+  /** Tutti i tasti che il pulsante accende (`action`: `['Space', ' ']`). */
+  keys: string[];
+  x: number;
+  y: number;
+}
+
+/** Croce direzionale e pulsante azione su schermo. Si attiva con `enableTouchControls()`. */
+export declare class BeeTouchControls {
+  canvas: HTMLCanvasElement;
+  input: BeeInput;
+  btnSize: number;
+  margin: number;
+  buttons: {
+    left: BeeTouchControlsButton;
+    right: BeeTouchControlsButton;
+    up: BeeTouchControlsButton;
+    down: BeeTouchControlsButton;
+    action: BeeTouchControlsButton;
+  };
+  /** Identificatore del dito → nome del pulsante che sta premendo. */
+  activeTouches: Record<string, string>;
+
+  /** Lancia `BeeTouchControls: canvas required` o `BeeTouchControls: input required`. */
+  constructor(canvas: HTMLCanvasElement, input: BeeInput);
+
+  updatePositions(): void;
+  /** Coordinate canvas del tocco, oppure `null` se il canvas non ha dimensione. */
+  getCanvasCoords(touch: { clientX: number; clientY: number }): { x: number; y: number } | null;
+  getButtonAt(x: number, y: number): string | null;
+  handleTouch(e: TouchEvent): void;
+  handleTouchEnd(e: TouchEvent): void;
+  draw(ctx: CanvasRenderingContext2D): void;
+  /** Toglie i listener, rilascia i tasti tenuti e svuota `activeTouches`. Si può chiamare più volte. */
+  destroy(): void;
+}
+
 export declare class BeeSpriteSheet {
   image: CanvasImageSource | null;
   frameWidth: number;
