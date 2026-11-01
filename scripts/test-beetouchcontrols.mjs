@@ -45,12 +45,13 @@ function setup() {
 }
 
 // Una "dita" attiva: { id, x, y }. `touches` è l'elenco dopo l'evento.
-function touchEvent(touches) {
+function touchEvent(touches, changed) {
+    const raw = (t) => ({ identifier: t.id, clientX: t.x, clientY: t.y });
     return {
         cancelable: true,
         preventDefault() {},
-        touches: touches.map((t) => ({ identifier: t.id, clientX: t.x, clientY: t.y })),
-        changedTouches: touches.map((t) => ({ identifier: t.id, clientX: t.x, clientY: t.y }))
+        touches: touches.map(raw),
+        changedTouches: (changed || touches).map(raw)
     };
 }
 
@@ -264,6 +265,62 @@ function pos(controls, name) {
     assert(depth === 0, '10: save/restore bilanciati');
     controls.destroy();
     input.destroy();
+}
+
+// 11. un tocco su un pulsante virtuale non è un clic del mouse
+{
+    const { canvas, input, controls } = setup();
+    const left = pos(controls, 'left');
+    const action = pos(controls, 'action');
+
+    canvas.dispatch('touchstart', touchEvent([{ id: 1, ...left }]));
+    assert(input.isPressed('ArrowLeft') === true, '11: il pulsante funziona');
+    assert(input.mouse.pressed === false && input.mouse.wasPressed === false, '11: mouse non preme sul pulsante');
+    assert(input.mouse.x === 0 && input.mouse.y === 0, '11: mouse non si sposta sul pulsante');
+
+    // Il dito sul pulsante scivola via: resta del pulsante, nessun clic.
+    canvas.dispatch('touchmove', touchEvent([{ id: 1, x: 400, y: 100 }]));
+    assert(input.mouse.pressed === false && input.mouse.x === 0, '11: scivolare fuori non crea un clic');
+    canvas.dispatch('touchend', touchEvent([]));
+
+    // Un tocco fuori dai pulsanti resta un clic normale.
+    input.endFrame();
+    canvas.dispatch('touchstart', touchEvent([{ id: 2, x: 400, y: 100 }]));
+    assert(input.mouse.pressed === true && input.mouse.wasPressed === true, '11: tocco libero preme');
+    assert(input.mouse.x === 400 && input.mouse.y === 100, '11: tocco libero sposta il mouse');
+
+    // Con il dito libero giù, un dito su un pulsante non cambia il clic né la posizione.
+    input.endFrame();
+    canvas.dispatch(
+        'touchstart',
+        touchEvent([{ id: 2, x: 400, y: 100 }, { id: 3, ...action }], [{ id: 3, ...action }])
+    );
+    assert(input.isPressed('Space') === true, '11: azione mentre l\'altro dito preme');
+    assert(input.mouse.wasPressed === false, '11: il pulsante non crea un secondo clic');
+    assert(input.mouse.x === 400 && input.mouse.y === 100, '11: mouse resta sul dito libero');
+    canvas.dispatch('touchend', touchEvent([{ id: 3, ...action }], [{ id: 2, x: 400, y: 100 }]));
+    assert(input.mouse.pressed === false, '11: alzato il dito libero, resta solo il pulsante: pressed false');
+    assert(input.isPressed('Space') === true, '11: il pulsante resta premuto');
+    canvas.dispatch('touchend', touchEvent([]));
+    assert(input.isPressed('Space') === false, '11: azione rilasciata');
+
+    // Dopo destroy il blocco non c'è più: lo stesso punto è un clic.
+    controls.destroy();
+    input.endFrame();
+    canvas.dispatch('touchstart', touchEvent([{ id: 4, ...left }]));
+    assert(input.mouse.pressed === true && input.mouse.wasPressed === true, '11: dopo destroy il punto è un clic');
+    input.destroy();
+}
+
+// 11b. un input senza addTouchBlocker funziona come prima
+{
+    const canvas = canvasOf(800, 480);
+    const keys = {};
+    const input = { setKey(k, v) { keys[k] = v; } };
+    const controls = new BeeTouchControls(canvas, input);
+    canvas.dispatch('touchstart', touchEvent([{ id: 1, ...pos(controls, 'left') }]));
+    assert(keys.ArrowLeft === true, '11b: funziona senza addTouchBlocker');
+    controls.destroy();
 }
 
 console.log('BeeTouchControls tests ok');

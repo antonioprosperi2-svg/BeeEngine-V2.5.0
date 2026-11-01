@@ -7,6 +7,8 @@ export class BeeInput {
         this.#alias = Object.create(null);
         this.#virtual = Object.create(null);
         this.#listeners = [];
+        this.#blockers = [];
+        this.#virtualIds = new Set();
 
         this.keys = {};
         this.pressed = {};
@@ -36,6 +38,8 @@ export class BeeInput {
     #alias;
     #virtual;
     #listeners;
+    #blockers;
+    #virtualIds;
 
     #listen(target, type, handler, options) {
         target.addEventListener(type, handler, options);
@@ -122,43 +126,111 @@ export class BeeInput {
         return out;
     }
 
+    #isBlocked(x, y) {
+        for (let i = 0; i < this.#blockers.length; i++) {
+            if (this.#blockers[i](x, y)) return true;
+        }
+        return false;
+    }
+
+    /** Primo tocco della lista che non è stato preso da un pulsante virtuale. */
+    #firstReal(list) {
+        for (let i = 0; i < list.length; i++) {
+            if (!this.#virtualIds.has(list[i].id)) return list[i];
+        }
+        return null;
+    }
+
     #onTouchStart(e) {
         this.#block(e);
         this.touches = this.#readTouches(e && e.touches);
-        if (this.touches.length > 0) {
-            this.mouse.x = this.touches[0].x;
-            this.mouse.y = this.touches[0].y;
+
+        // Con un blocker attivo, un tocco che nasce su un pulsante virtuale non è un clic.
+        // Resta virtuale finché il dito non si alza.
+        let real = true;
+        if (this.#blockers.length > 0) {
+            const fresh = e && e.changedTouches && e.changedTouches.length > 0
+                ? this.#readTouches(e.changedTouches)
+                : this.touches;
+            real = fresh.length === 0;
+            for (let i = 0; i < fresh.length; i++) {
+                if (this.#isBlocked(fresh[i].x, fresh[i].y)) this.#virtualIds.add(fresh[i].id);
+                else real = true;
+            }
         }
-        this.mouse.pressed = true;
-        this.mouse.wasPressed = true;
+
+        const first = this.#firstReal(this.touches);
+        if (first) {
+            this.mouse.x = first.x;
+            this.mouse.y = first.y;
+        }
+        if (real) {
+            this.mouse.pressed = true;
+            this.mouse.wasPressed = true;
+        }
     }
 
     #onTouchMove(e) {
         this.#block(e);
         this.touches = this.#readTouches(e && e.touches);
-        if (this.touches.length > 0) {
-            this.mouse.x = this.touches[0].x;
-            this.mouse.y = this.touches[0].y;
+        const first = this.#firstReal(this.touches);
+        if (first) {
+            this.mouse.x = first.x;
+            this.mouse.y = first.y;
         }
     }
 
     #onTouchEnd(e) {
         this.#block(e);
         const touches = e && e.touches;
+        const last = e && e.changedTouches && e.changedTouches[0];
+        const lastWasVirtual = !!last && this.#virtualIds.has(last.identifier);
+
+        if (this.#virtualIds.size > 0) {
+            const alive = new Set();
+            if (touches) for (let i = 0; i < touches.length; i++) alive.add(touches[i].identifier);
+            for (const id of this.#virtualIds) {
+                if (!alive.has(id)) this.#virtualIds.delete(id);
+            }
+        }
+
         if (touches && touches.length > 0) {
             this.touches = this.#readTouches(touches);
-            this.mouse.x = this.touches[0].x;
-            this.mouse.y = this.touches[0].y;
+            const first = this.#firstReal(this.touches);
+            if (first) {
+                this.mouse.x = first.x;
+                this.mouse.y = first.y;
+                return;
+            }
+            // Restano solo dita sui pulsanti virtuali: il clic è finito.
+            if (!lastWasVirtual && last) {
+                const pos = this.getCanvasPosition(last.clientX, last.clientY);
+                this.mouse.x = pos.x;
+                this.mouse.y = pos.y;
+            }
+            this.mouse.pressed = false;
             return;
         }
-        const last = e && e.changedTouches && e.changedTouches[0];
-        if (last) {
+        if (last && !lastWasVirtual) {
             const pos = this.getCanvasPosition(last.clientX, last.clientY);
             this.mouse.x = pos.x;
             this.mouse.y = pos.y;
         }
         this.touches = [];
         this.mouse.pressed = false;
+    }
+
+    /**
+     * Registra un test `(x, y) => boolean` in coordinate canvas. Un tocco che inizia dove
+     * il test risponde `true` non aggiorna `mouse`. Ritorna la funzione che lo toglie.
+     */
+    addTouchBlocker(test) {
+        if (typeof test !== 'function') return () => {};
+        this.#blockers.push(test);
+        return () => {
+            const i = this.#blockers.indexOf(test);
+            if (i >= 0) this.#blockers.splice(i, 1);
+        };
     }
 
     #sync(name) {
@@ -211,5 +283,7 @@ export class BeeInput {
             item.target.removeEventListener(item.type, item.handler, item.options);
         }
         this.#listeners.length = 0;
+        this.#blockers.length = 0;
+        this.#virtualIds.clear();
     }
 }

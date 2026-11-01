@@ -40,8 +40,15 @@ hero.update = function moveHero(dt, input) {
     this.worldX = Math.max(0, Math.min(800 - this.width, this.worldX));
 };
 
+// Tocca fuori dai pulsanti: il clic sale. Tocca un pulsante: il contatore non si muove.
+let clicks = 0;
+
 const scene = {
     entities: [hero],
+
+    update(_dt, input) {
+        if (input && input.mouse.wasPressed) clicks += 1;
+    },
 
     drawWorld(ctx) {
         ctx.fillStyle = '#12141c';
@@ -58,7 +65,7 @@ const scene = {
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
         ctx.fillText(held.length ? `tasti: ${held.join(' ')}` : 'tasti: nessuno', 24, 24);
-        ctx.fillText(`dita sui pulsanti: ${Object.keys(controls.activeTouches).length} · salti: ${jumps}`, 24, 50);
+        ctx.fillText(`dita sui pulsanti: ${Object.keys(controls.activeTouches).length} · salti: ${jumps} · clic: ${clicks}`, 24, 50);
     }
 };
 

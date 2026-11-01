@@ -12,6 +12,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.11.2] - 2026-11-01
+
+### Added
+
+- `BeeInput.addTouchBlocker(test)` takes a `(x, y) => boolean` test in canvas coordinates and returns a function that removes it. A touch that starts where the test says `true` does not update `mouse`. Nothing changes until a blocker is added.
+
+### Fixed
+
+- A touch on a `BeeTouchControls` button no longer sets `mouse.pressed` or `mouse.wasPressed`, and no longer moves `mouse.x` / `mouse.y`, so a `BeeButton` or `BeeMenuScene` under the button does not fire. `BeeTouchControls` adds its blocker in the constructor and removes it in `destroy()`.
+- A finger that began on a button stays a button finger even if it slides off. A finger that began outside is still a normal click, and a second finger outside the buttons presses as before. When only button fingers are left, `mouse.pressed` goes back to `false`.
+- `BeeInput.touches` is unchanged and still lists every finger.
+- `BeeJoystick` and `BeeTouchButton` do not use the blocker yet.
+
 ## [2.11.1] - 2026-11-01
 
 ### Fixed

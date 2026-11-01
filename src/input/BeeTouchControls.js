@@ -1,5 +1,6 @@
 export class BeeTouchControls {
     #destroyed = false;
+    #unblock = null;
 
     constructor(canvas, input) {
         if (!canvas) throw new Error('BeeTouchControls: canvas required');
@@ -36,6 +37,12 @@ export class BeeTouchControls {
         canvas.addEventListener('touchmove', this.onTouchMove, { passive: false });
         canvas.addEventListener('touchend', this.onTouchEnd, { passive: false });
         canvas.addEventListener('touchcancel', this.onTouchCancel, { passive: false });
+
+        // Un tocco che nasce su un pulsante virtuale non deve diventare un clic del mouse
+        // (BeeButton, BeeMenuScene). Un `input` senza addTouchBlocker si comporta come prima.
+        if (typeof input.addTouchBlocker === 'function') {
+            this.#unblock = input.addTouchBlocker((x, y) => this.getButtonAt(x, y) !== null);
+        }
     }
 
     #keysOf(name) {
@@ -185,6 +192,10 @@ export class BeeTouchControls {
         this.canvas.removeEventListener('touchmove', this.onTouchMove, { passive: false });
         this.canvas.removeEventListener('touchend', this.onTouchEnd, { passive: false });
         this.canvas.removeEventListener('touchcancel', this.onTouchCancel, { passive: false });
+        if (this.#unblock) {
+            this.#unblock();
+            this.#unblock = null;
+        }
 
         for (const id in this.activeTouches) {
             const keys = this.#keysOf(this.activeTouches[id]);

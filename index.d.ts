@@ -312,6 +312,11 @@ export declare class BeeInput {
   isPressed(key: string): boolean;
   wasPressed(key: string): boolean;
   setKey(key: string, value: boolean): void;
+  /**
+   * `test(x, y)` in coordinate canvas. Un tocco che inizia dove risponde `true` non aggiorna `mouse`
+   * (lo usa `BeeTouchControls` per i pulsanti virtuali). Ritorna la funzione che lo toglie.
+   */
+  addTouchBlocker(test: (x: number, y: number) => boolean): () => void;
   endFrame(): void;
   destroy(): void;
 }

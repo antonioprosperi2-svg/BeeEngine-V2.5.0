@@ -156,4 +156,96 @@ const { BeeInput } = await import('../src/input/BeeInput.js');
     assert(input.isPressed('a') === false, 'keydown dopo destroy non preme a');
 }
 
+// addTouchBlocker: un tocco che nasce su una zona bloccata non aggiorna mouse.
+{
+    const canvas = canvasBox(800, 480);
+    const input = new BeeInput(canvas);
+    const block = { cancelable: true, preventDefault() {} };
+    const zone = (x, y) => x < 100 && y > 400;
+    const off = input.addTouchBlocker(zone);
+    assert(typeof off === 'function', 'addTouchBlocker ritorna off');
+
+    canvas.dispatch('touchstart', {
+        ...block,
+        touches: [{ identifier: 1, clientX: 40, clientY: 440 }],
+        changedTouches: [{ identifier: 1, clientX: 40, clientY: 440 }]
+    });
+    assert(input.mouse.pressed === false && input.mouse.wasPressed === false, 'tocco bloccato non preme');
+    assert(input.mouse.x === 0 && input.mouse.y === 0, 'tocco bloccato non sposta mouse');
+    assert(input.touches.length === 1, 'touches resta il dato grezzo');
+
+    // Il dito bloccato che si sposta fuori dalla zona resta bloccato.
+    canvas.dispatch('touchmove', {
+        ...block,
+        touches: [{ identifier: 1, clientX: 300, clientY: 200 }],
+        changedTouches: [{ identifier: 1, clientX: 300, clientY: 200 }]
+    });
+    assert(input.mouse.pressed === false && input.mouse.x === 0, 'il dito bloccato resta bloccato');
+
+    // Un secondo dito fuori dalla zona è un clic normale.
+    canvas.dispatch('touchstart', {
+        ...block,
+        touches: [
+            { identifier: 1, clientX: 300, clientY: 200 },
+            { identifier: 2, clientX: 500, clientY: 100 }
+        ],
+        changedTouches: [{ identifier: 2, clientX: 500, clientY: 100 }]
+    });
+    assert(input.mouse.pressed === true && input.mouse.wasPressed === true, 'secondo dito libero preme');
+    assert(input.mouse.x === 500 && input.mouse.y === 100, 'mouse segue il dito libero');
+
+    // Alzo il dito libero: resta solo quello bloccato, il clic è finito.
+    canvas.dispatch('touchend', {
+        ...block,
+        touches: [{ identifier: 1, clientX: 300, clientY: 200 }],
+        changedTouches: [{ identifier: 2, clientX: 520, clientY: 120 }]
+    });
+    assert(input.mouse.pressed === false, 'restano solo dita bloccate: pressed false');
+    assert(input.mouse.x === 520 && input.mouse.y === 120, 'rilascio usa il dito libero');
+
+    canvas.dispatch('touchend', {
+        ...block,
+        touches: [],
+        changedTouches: [{ identifier: 1, clientX: 300, clientY: 200 }]
+    });
+    assert(input.mouse.x === 520, 'alzare il dito bloccato non sposta mouse');
+
+    // Dopo che il dito bloccato si è alzato, lo stesso id è libero.
+    input.endFrame();
+    canvas.dispatch('touchstart', {
+        ...block,
+        touches: [{ identifier: 1, clientX: 300, clientY: 200 }],
+        changedTouches: [{ identifier: 1, clientX: 300, clientY: 200 }]
+    });
+    assert(input.mouse.pressed === true && input.mouse.wasPressed === true, 'id riusato fuori zona preme');
+    canvas.dispatch('touchend', { ...block, touches: [], changedTouches: [{ identifier: 1, clientX: 300, clientY: 200 }] });
+
+    // off toglie il blocco.
+    off();
+    input.endFrame();
+    canvas.dispatch('touchstart', {
+        ...block,
+        touches: [{ identifier: 3, clientX: 40, clientY: 440 }],
+        changedTouches: [{ identifier: 3, clientX: 40, clientY: 440 }]
+    });
+    assert(input.mouse.pressed === true && input.mouse.wasPressed === true, 'dopo off la zona preme');
+    canvas.dispatch('touchend', { ...block, touches: [], changedTouches: [{ identifier: 3, clientX: 40, clientY: 440 }] });
+
+    assert(typeof input.addTouchBlocker(null) === 'function', 'blocker non valido: nessun lancio');
+    input.destroy();
+}
+
+{
+    const canvas = canvasBox(800, 480);
+    const input = new BeeInput(canvas);
+    input.addTouchBlocker(() => true);
+    input.destroy();
+    canvas.dispatch('touchstart', {
+        cancelable: true,
+        preventDefault() {},
+        touches: [{ identifier: 1, clientX: 1, clientY: 1 }]
+    });
+    assert(input.mouse.wasPressed === false, 'dopo destroy il touch non fa nulla');
+}
+
 console.log('BeeInput tests ok');
