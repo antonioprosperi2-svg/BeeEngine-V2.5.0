@@ -12,6 +12,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.11.0] - 2026-11-01
+
+### Added
+
+- `BeeDialogue` plugin for dialogue trees: a speaker, text, branching choices, and straight-line advance. The engine does not import it; attach it yourself. It has no tick and no listeners of its own: call `handleInput(input)` from `scene.update` and `draw(ctx)` from `scene.draw`.
+- `advance` works on a node without choices and `choose(index)` on a node with choices. The wrong one returns `false` and warns. `start` on an open dialogue restarts it cleanly.
+- Texts can be a literal or a `BeeLocale` key. Without a locale the literal is shown, or the raw key, never an empty string.
+- `onChange` reports `start`, `node`, `choice`, `advance`, and `end`, and `end` says why. `toJSON` and `fromJSON` save the tree and where the dialogue stands.
+- A duplicate id or a malformed tree throws at `load`. A `next` that points nowhere warns at `load` and closes with `missing-node` if the player reaches it.
+- `examples/dialogue.html` shows a three-node dialogue with two choices, with labels from `BeeLocale`.
+
 ## [2.10.10] - 2026-10-25
 
 ### Fixed

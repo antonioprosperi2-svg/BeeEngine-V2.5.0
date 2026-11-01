@@ -3,10 +3,10 @@
   <img src="https://beeenginejs.com/wp-content/uploads/2026/10/bee-animated.gif" alt="BeeEngine Logo" width="900" />
 </p>
 
-# 🐝 Motore di gioco 2D BeeEngine (v2.10.10 Professional)
+# 🐝 Motore di gioco 2D BeeEngine (v2.11.0 Professional)
 
 BeeEngine è un motore di gioco 2D leggero, modulare e altamente ottimizzato scritto in puro JavaScript moderno (ES Modules) per HTML5 Canvas.
-La **2.10.10** sistema `BeeTouchButton`: il cerchio si preme col puntatore dentro il raggio e `destroy` toglie i listener. Demo: `examples/touchbutton.html`. La **2.10.9** sistema `BeeJoystick`: sul PC il pomello si trascina col mouse e lo stick accende anche WASD. Il dito resta. Demo: `examples/joystick.html`. La **2.10.8** sistema `BeeJoystick`: il dito resta com’è, `draw` esce senza contesto, e `destroy` stacca i listener. Demo: `examples/joystick.html`. La **2.10.7** sistema `BeeInput`: tastiera e `setKey` restano distinti, il rilascio spegne il tasto premuto, e `destroy` toglie i listener. La **2.10.6** sistema `BeeButton`: legge `input.mouse` nel loop, senza listener propri. Demo: `examples/button.html`. La **2.10.5** sistema `BeeTilemapLoader`: un layer è solido solo se il nome o la proprietà lo dicono, e il bit di flip di Tiled non nasconde il tile. Demo: `examples/tiled.html`. La **2.10.4** sistema `BeeTilemap`: il box è l’intera mappa, la collisione copre le tile interne e il bordo destro non entra nella cella dopo. Demo: `examples/tilemap.html`. La **2.10.3** sistema `BeeText`: il punteggio negativo tiene il segno davanti (`-00003`) e le vite frazionarie o non valide non lanciano. Demo: `examples/text.html`. La **2.10.2** sistema `BeeSpriteSheet`: ritaglia un indice, senza `frameCount` non c’è un limite, e `drawFrame` esce se mancano contesto o foglio valido. La **2.10.1** sistema `BeeSprite`, il player semplice del foglio: `frameCount` opzionale (default una riga), `speed` 8 frame al secondo, e `update`/`draw` escono se `dt` o il foglio non sono validi. Demo: `examples/sprite.html`. La **2.10.0** aggiunge il plugin `BeeInventory` (stack, uso, equip, salvataggio degli slot): il motore non lo importa. La **2.9.7** sistema `BeeParticleSystem`: l'AABB segue le particelle vive (niente culling sul 32×32), `update` rispetta `active`/`destroyed`/`dt`, e `destroy` svuota l'array. La **2.9.6** rende `BeeLayer` indipendente dall'ordine delle liste: un figlio con drawLayer proprio non sparisce più se compare prima del padre. La **2.9.5** chiude i bounds di `BeeCamera`: `setBounds` li applica subito, un valore non valido non cancella i limiti già messi, e `Math.round` di x/y non esce dal rettangolo. La **2.9.4** sistema `BeeCamera` da usare (un tick, follow prima del tick, view = canvas). La **2.9.3** allinea `BeeCamera` a `dt` (snap, lerp, bounds, tick nel loop). La **2.9.2** lascia `#pick` decidere durante il lock (coda o interrupt). La **2.9.1** allinea `BeeAnimatedSprite` all'Animator (loop, catch-up, draw). La **2.9.0** apre i plugin: registro cieco + `BeeLocale`. La **2.8.6** sistema `BeePlayer`. La **2.8.5** allinea `BeePlatform.draw`. La **2.8.4** allinea `BeeEnemy.update` a `worldX`. La **2.8.3** rende `BeeMenuScene` un menu configurabile. La **2.8.2** sistema `BeeEnemyShooter`. La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
+La **2.11.0** aggiunge il plugin `BeeDialogue` (alberi di dialogo con scelte, locale opzionale, salvataggio): il motore non lo importa. Demo: `examples/dialogue.html`. La **2.10.10** sistema `BeeTouchButton`: il cerchio si preme col puntatore dentro il raggio e `destroy` toglie i listener. Demo: `examples/touchbutton.html`. La **2.10.9** sistema `BeeJoystick`: sul PC il pomello si trascina col mouse e lo stick accende anche WASD. Il dito resta. Demo: `examples/joystick.html`. La **2.10.8** sistema `BeeJoystick`: il dito resta com’è, `draw` esce senza contesto, e `destroy` stacca i listener. Demo: `examples/joystick.html`. La **2.10.7** sistema `BeeInput`: tastiera e `setKey` restano distinti, il rilascio spegne il tasto premuto, e `destroy` toglie i listener. La **2.10.6** sistema `BeeButton`: legge `input.mouse` nel loop, senza listener propri. Demo: `examples/button.html`. La **2.10.5** sistema `BeeTilemapLoader`: un layer è solido solo se il nome o la proprietà lo dicono, e il bit di flip di Tiled non nasconde il tile. Demo: `examples/tiled.html`. La **2.10.4** sistema `BeeTilemap`: il box è l’intera mappa, la collisione copre le tile interne e il bordo destro non entra nella cella dopo. Demo: `examples/tilemap.html`. La **2.10.3** sistema `BeeText`: il punteggio negativo tiene il segno davanti (`-00003`) e le vite frazionarie o non valide non lanciano. Demo: `examples/text.html`. La **2.10.2** sistema `BeeSpriteSheet`: ritaglia un indice, senza `frameCount` non c’è un limite, e `drawFrame` esce se mancano contesto o foglio valido. La **2.10.1** sistema `BeeSprite`, il player semplice del foglio: `frameCount` opzionale (default una riga), `speed` 8 frame al secondo, e `update`/`draw` escono se `dt` o il foglio non sono validi. Demo: `examples/sprite.html`. La **2.10.0** aggiunge il plugin `BeeInventory` (stack, uso, equip, salvataggio degli slot): il motore non lo importa. La **2.9.7** sistema `BeeParticleSystem`: l'AABB segue le particelle vive (niente culling sul 32×32), `update` rispetta `active`/`destroyed`/`dt`, e `destroy` svuota l'array. La **2.9.6** rende `BeeLayer` indipendente dall'ordine delle liste: un figlio con drawLayer proprio non sparisce più se compare prima del padre. La **2.9.5** chiude i bounds di `BeeCamera`: `setBounds` li applica subito, un valore non valido non cancella i limiti già messi, e `Math.round` di x/y non esce dal rettangolo. La **2.9.4** sistema `BeeCamera` da usare (un tick, follow prima del tick, view = canvas). La **2.9.3** allinea `BeeCamera` a `dt` (snap, lerp, bounds, tick nel loop). La **2.9.2** lascia `#pick` decidere durante il lock (coda o interrupt). La **2.9.1** allinea `BeeAnimatedSprite` all'Animator (loop, catch-up, draw). La **2.9.0** apre i plugin: registro cieco + `BeeLocale`. La **2.8.6** sistema `BeePlayer`. La **2.8.5** allinea `BeePlatform.draw`. La **2.8.4** allinea `BeeEnemy.update` a `worldX`. La **2.8.3** rende `BeeMenuScene` un menu configurabile. La **2.8.2** sistema `BeeEnemyShooter`. La **2.8.1** dà a `BeeCollectible` un `collect()` vero. La **2.8.0** chiude il nucleo framework: Animator, Tween/Timeline, AudioMixer, Layer, Prefab, Pathfinder, **BeeUI**. Dalla 2.7: Timer. Dalla 2.6: Pool. Dalla 2.5: Transform, Save, fisica, SceneManager, SpatialHash.
 
 Cronologia delle versioni: [CHANGELOG.md](CHANGELOG.md).
 
@@ -45,7 +45,7 @@ BeeEngine-V2.9/
     ├── input/                  # Tastiera, mouse, joystick, touch, button
     ├── ui/                     # BeeUI: Control, panel, stack, label, button, nine-slice
     ├── physics/                # BeeSpatialHash, BeePhysicsWorld, BeeRigidBody, AABB groups
-    ├── plugins/                # contratto + BeeLocale + BeeInventory (il motore non importa questi file)
+    ├── plugins/                # contratto + BeeLocale + BeeInventory + BeeDialogue (il motore non importa questi file)
     └── debug/                  # BeeLadybug: overlay e hitbox
 ```
 
@@ -443,7 +443,7 @@ Il motore **non importa** i plugin. Contratto in `src/plugins/PLUGIN_CONTRACT.md
 
 ```javascript
 import { BeeEngine } from 'beeengine';
-import { BeeLocale, BeeInventory } from 'beeengine/plugins';
+import { BeeLocale, BeeInventory, BeeDialogue } from 'beeengine/plugins';
 
 const gioco = new BeeEngine('testCanvas', 800, 600);
 const locale = new BeeLocale({
@@ -468,9 +468,24 @@ inventory.defineItem('potion', {
 });
 const drop = inventory.add('potion', 8); // { added: 5, left: 3 }
 inventory.use(0, null);
+
+const dialogue = new BeeDialogue({ engine: gioco, locale });
+dialogue.load({
+    start: 'intro',
+    nodes: [
+        { id: 'intro', speaker: 'Guida', textKey: 'hello', choices: [
+            { text: 'La mappa?', next: 'map' },
+            { text: 'Addio', next: null }
+        ] },
+        { id: 'map', speaker: 'Guida', text: 'Il villaggio è a est.' }
+    ]
+});
+// nella scena: scene.update → dialogue.handleInput(input); scene.draw → dialogue.draw(ctx)
 ```
 
-`BeeLocale` è pura lettura. Chi disegna chiama `t(key)`. `BeeInventory` non disegna e non entra nel loop: `add` dice sempre cosa non è entrato (`left`), `equip` / `unequip` o riescono per intero o lasciano lo stato com'era. Le definizioni restano nel codice; `toJSON` salva solo slot ed equipaggiamento. Demo: `examples/inventory.html` (collectible + conteggi via `BeeLocale.t`). Test: `node scripts/test-beeinventory.mjs`. Prossimi (uno alla volta): Light, Dialogue, Quest, Net, Post, Spine.
+`BeeLocale` è pura lettura. Chi disegna chiama `t(key)`. `BeeInventory` non disegna e non entra nel loop: `add` dice sempre cosa non è entrato (`left`), `equip` / `unequip` o riescono per intero o lasciano lo stato com'era. Le definizioni restano nel codice; `toJSON` salva solo slot ed equipaggiamento. Demo: `examples/inventory.html` (collectible + conteggi via `BeeLocale.t`). Test: `node scripts/test-beeinventory.mjs`.
+
+`BeeDialogue` tiene lo stato di un albero di dialogo (speaker, testo, scelte) e non ha né tick né listener propri: la scena chiama `handleInput(input)` in `update` e `draw(ctx)` in `scene.draw` (spazio schermo, dopo la camera). Un nodo senza `choices` si avanza con `advance()`, uno con `choices` con `choose(index)`; il verbo sbagliato è `false` e avvisa. `*Key` si risolve con un locale (opzione, `setLocale` o `engine.plugin('locale')`), senza locale vale il letterale o la chiave grezza, mai vuoto. `onChange` emette `start`, `node`, `choice`, `advance`, `end` (con `reason`: `finished`, `cancel`, `restart`, `reload`, `missing-node`). `start()` da aperto fa un restart pulito. L'albero con id duplicati o malformato lancia al `load`; un `next` che non esiste avvisa al load e a runtime chiude con `missing-node`. `toJSON` salva albero e stato; `fromJSON` riapre sul nodo salvato emettendo solo `node`. Demo: `examples/dialogue.html` (E parla, L cambia lingua). Test: `node scripts/test-beedialogue.mjs`. Prossimi (uno alla volta): Light, Quest, Net, Post, Spine.
 
 ## 🎬 BeeSceneManager — replace, non stack
 

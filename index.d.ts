@@ -2297,6 +2297,117 @@ export declare class BeeInventory implements BeePlugin {
   clear(): this;
 }
 
+export interface BeeDialogueChoice {
+  /** Testo letterale (se manca si usa `textKey`). */
+  text?: string;
+  /** Chiave `BeeLocale`, risolta solo se c'è un locale. */
+  textKey?: string;
+  /** Id del nodo successivo; omesso o `null` chiude il dialogo dopo la scelta. */
+  next?: string | null;
+  /** Payload libero per il gioco (arriva nell'evento `choice`). */
+  data?: Record<string, unknown>;
+}
+
+export interface BeeDialogueNode {
+  id: string;
+  speaker?: string;
+  speakerKey?: string;
+  text?: string;
+  textKey?: string;
+  /** Assente o `[]`: nodo lineare (`advance`). Presente: serve `choose(index)`. */
+  choices?: BeeDialogueChoice[];
+  /** Solo nodi lineari. Con `choices` viene ignorato (e avvisa al load). */
+  next?: string | null;
+  data?: Record<string, unknown>;
+}
+
+export interface BeeDialogueTree {
+  /** Nodo d'ingresso. Assente o sconosciuto: il primo nodo. */
+  start?: string;
+  /** Array di nodi, oppure mappa id → nodo. */
+  nodes: Record<string, Omit<BeeDialogueNode, "id"> & { id?: string }> | BeeDialogueNode[];
+}
+
+export interface BeeDialogueOptions {
+  engine?: BeeEngine;
+  /** Qualunque oggetto con `t(key)`, di norma un `BeeLocale`. Senza, si cerca `engine.plugin('locale')`. */
+  locale?: { t(key: string): string } | null;
+  /** Tasto di `handleInput` per avanzare o confermare. Default `'Space'`. */
+  lineAdvanceKey?: string;
+  /** Se impostato, `handleInput` chiude il dialogo con reason `'cancel'`. Default `null`. */
+  cancelKey?: string | null;
+}
+
+/** Nodo corrente con speaker, testo e scelte già risolti. */
+export interface BeeDialogueView {
+  id: string;
+  speaker?: string;
+  text?: string;
+  choices?: Array<{ text: string; textKey?: string; next?: string; data?: Record<string, unknown> }>;
+  next?: string;
+  data?: Record<string, unknown>;
+}
+
+export type BeeDialogueChange =
+  | { type: "start"; id: string }
+  | { type: "node"; id: string; node: BeeDialogueView | null }
+  | { type: "choice"; id: string; index: number; data?: Record<string, unknown> }
+  | { type: "advance"; from: string; to: string | null }
+  | { type: "end"; id: string | null; reason: string };
+
+export interface BeeDialogueDrawOptions {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  padding?: number;
+  font?: string;
+  speakerColor?: string;
+  textColor?: string;
+  choiceColor?: string;
+  selectedChoice?: number;
+}
+
+export interface BeeDialogueSave {
+  tree: { start: string | null; nodes: BeeDialogueNode[] } | null;
+  open: boolean;
+  currentId: string | null;
+  selectedChoice: number;
+}
+
+export declare class BeeDialogue implements BeePlugin {
+  engine: BeeEngine | null;
+
+  constructor(options?: BeeDialogueOptions);
+  attach(engine: BeeEngine): this;
+  detach(): this;
+  /** Id duplicato, nodo senza id o albero malformato: lancia. `null` svuota. Chiude un dialogo aperto (`'reload'`). */
+  load(tree: BeeDialogueTree | null): this;
+  /** Già aperto: restart pulito (`end` con `'restart'`, poi `start`). Nodo sconosciuto: `false`. */
+  start(nodeId?: string): boolean;
+  /** Solo su nodo lineare. Con scelte è `false` e avvisa. */
+  advance(): boolean;
+  /** Solo su nodo con scelte. Indice fuori range è `false` e avvisa. */
+  choose(index: number): boolean;
+  close(reason?: string): this;
+  isOpen(): boolean;
+  currentId(): string | null;
+  /** Copia risolta del nodo corrente, o `null`. Mai il riferimento interno. */
+  current(): BeeDialogueView | null;
+  listChoices(): Array<{ index: number; text: string; data?: Record<string, unknown> }>;
+  setLocale(locale: { t(key: string): string } | null): this;
+  /** Da chiamare in `scene.update`. Non ascolta nulla da solo. */
+  handleInput(input: BeeInput): this;
+  /** Spazio schermo, da `scene.draw`. No-op senza `ctx` o a dialogo chiuso. */
+  draw(ctx: CanvasRenderingContext2D | null, options?: BeeDialogueDrawOptions): this;
+  onChange(fn: (event: BeeDialogueChange) => void): () => void;
+  toJSON(): BeeDialogueSave;
+  /** Un dialogo aperto torna aperto senza un secondo `start`: scatta solo `node`. */
+  fromJSON(data: Partial<BeeDialogueSave>): this;
+  /** Chiude. L'albero resta; `load(null)` lo svuota. */
+  clear(): this;
+}
+
 export declare class BeeEngine {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
