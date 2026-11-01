@@ -144,6 +144,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `BeeCamera.setBounds` clamps the camera immediately. A non-finite value or a negative side does not clear bounds that are already set.
 - Rounding the camera position keeps the view inside the bounds.
+- `isRectVisible` uses the same rounded rectangle as `apply`, so culling matches what is drawn.
 
 ## [2.9.4] - 2026-10-05
 
@@ -157,6 +158,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `BeeCamera.follow` stores the target and `update(dt)` moves the camera. `smooth` of 0 or 1 snaps; values in between ease with `dt`.
 - Bounds smaller than the view center the camera. A paused frame (`dt` of 0) does not follow.
+- The engine advances the camera on the simulation `dt`, so it stays still while paused.
 
 ## [2.9.2] - 2026-10-04
 
@@ -246,12 +248,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `BeeTransform` for scene-graph transforms.
-- `BeeSave` no longer treats a broken save as a first run.
 - `BeeRigidBody` and `BeePhysicsWorld`.
 - `BeeSpatialHash` for nearby queries.
 
 ### Fixed
 
+- `BeeSave` no longer treats a broken save as a first run.
 - Changing scene tears down the entities of the scene you leave.
 
 ## [2.4.0] - 2026-09-03
@@ -266,8 +268,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `BeeTime` splits scaled simulation time from real time. Pause sets the scaled `dt` to 0.
 
-## Earlier versions (2.0.0 – 2.2.0)
+## [2.2.0] - 2026-08-24
 
-`package.json` records 2.0.0 (2026-07-26), 2.1.2 and 2.1.3 (2026-08-19), and 2.2.0 (2026-08-24). Those commits do not describe a library change clearly enough to list here.
+### Added
+
+- Mobile controls: `gioco.enableJoystick()` turns on the analog joystick and the programmable buttons (`BeeJoystick` and `BeeTouchControls`) with a single call, with built-in handling for every touch screen.
+- `BeeVirtualDPad`: a configurable direction pad with 4 or 8 directions (`eightWay: false/true`), for precise retro or platform movement.
+- `BeeTouchButton`: a round touch button with a customizable radius and label (for example "A" to jump, "B" to shoot).
+- `BeeSpriteSheet` and `BeeTilemapLoader`: simpler loading and cropping from complex sprite sheets, and smooth asynchronous loading of game levels.
+- `BeeCollisionSystem`: a central registry that splits entities into logical groups, with solid resolution (`solid`) and event-driven interactions (`overlap`).
+- `BeeCamera` frustum culling to save CPU.
+- Official NPM distribution as an ES module, and `index.d.ts` type definitions for IntelliSense and VS Code suggestions.
+
+### Changed
+
+- The new touch classes are exported from `index.js`.
+- Documentation and Markdown layout updated.
+- Touch response tested and verified in real time on mobile devices.
+
+## Earlier versions (2.0.0 – 2.1.3)
+
+`package.json` records 2.0.0 (2026-07-26) and 2.1.2 and 2.1.3 (2026-08-19). Those commits do not describe a library change clearly enough to list here.
 
 See the commit history: <[Docs](https://antonioprosperi2-svg.github.io/BeeEnginejs/) >

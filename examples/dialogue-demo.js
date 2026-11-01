@@ -15,7 +15,7 @@ const locale = new BeeLocale({
             bye: 'Addio',
             map: 'Il villaggio è a est, oltre il ponte.',
             tip: 'Porta una torcia: la notte è lunga.',
-            talk: 'E parla',
+            talk: 'E interagisci',
             talking: 'Dialogo aperto',
             last: 'Ultima scelta'
         },
@@ -26,7 +26,7 @@ const locale = new BeeLocale({
             bye: 'Farewell',
             map: 'The village is east, past the bridge.',
             tip: 'Bring a torch: the night is long.',
-            talk: 'E to talk',
+            talk: 'E to interact',
             talking: 'Dialogue open',
             last: 'Last choice'
         }
