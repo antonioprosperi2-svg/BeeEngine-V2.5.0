@@ -3,15 +3,16 @@
   <img src="https://beeenginejs.com/wp-content/uploads/2026/10/bee-animated.gif" alt="BeeEngine Logo" width="900" />
 </p>
 
-# 🐝 Motore di gioco 2D BeeEngine (v2.11.2 Professional)
+# 🐝 Motore di gioco 2D BeeEngine (v2.11.3 Professional)
 
 BeeEngine è un motore di gioco 2D leggero, modulare e altamente ottimizzato scritto in puro JavaScript moderno (ES Modules) per HTML5 Canvas.
 
 ## 🆕 Novità
 
+* **2.11.3** — `BeeTouchControls.setButtonKeys(nome, tasti)` cambia i tasti di un pulsante (rilascia prima quelli attivi) e `draw` senza contesto esce in silenzio.
 * **2.11.2** — `BeeInput.addTouchBlocker`: un tocco su un pulsante di `BeeTouchControls` non è più un clic del mouse, quindi un `BeeButton` o un `BeeMenuScene` sotto il pulsante non scatta. Demo: `examples/touchcontrols.html` (contatore «clic»).
 * **2.11.1** — `BeeTouchControls`: il dito che scivola da un pulsante all'altro rilascia il tasto, due dita sullo stesso pulsante lo tengono finché non le alzi tutte e due, l'azione scrive `Space`, `destroy` toglie davvero i listener. Demo: `examples/touchcontrols.html`.
-* **2.11.0** — nuovo plugin `BeeDialogue` (alberi di dialogo con scelte, locale opzionale, salvataggio): il motore non lo importa. Demo: `examples/dialogue.html`.
+
 Storico completo, dalla versione più recente alla più vecchia: [CHANGELOG.md](CHANGELOG.md).
 
 ## 📦 Moduli

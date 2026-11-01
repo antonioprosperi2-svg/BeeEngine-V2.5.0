@@ -1863,13 +1863,21 @@ export declare class BeeTouchControls {
   /** Lancia `BeeTouchControls: canvas required` o `BeeTouchControls: input required`. */
   constructor(canvas: HTMLCanvasElement, input: BeeInput);
 
+  /**
+   * Cambia i tasti di un pulsante (`'left'`, `'right'`, `'up'`, `'down'`, `'action'`).
+   * `keys` è un array non vuoto di stringhe non vuote; il primo diventa `key`.
+   * Pulsante sconosciuto o array non valido: non fa niente. Rilascia prima i tasti
+   * che il pulsante sta tenendo.
+   */
+  setButtonKeys(name: string, keys: string[]): void;
   updatePositions(): void;
   /** Coordinate canvas del tocco, oppure `null` se il canvas non ha dimensione. */
   getCanvasCoords(touch: { clientX: number; clientY: number }): { x: number; y: number } | null;
   getButtonAt(x: number, y: number): string | null;
   handleTouch(e: TouchEvent): void;
   handleTouchEnd(e: TouchEvent): void;
-  draw(ctx: CanvasRenderingContext2D): void;
+  /** Senza `ctx` esce in silenzio. */
+  draw(ctx: CanvasRenderingContext2D | null | undefined): void;
   /** Toglie i listener, rilascia i tasti tenuti e svuota `activeTouches`. Si può chiamare più volte. */
   destroy(): void;
 }

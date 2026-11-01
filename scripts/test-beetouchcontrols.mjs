@@ -323,4 +323,118 @@ function pos(controls, name) {
     controls.destroy();
 }
 
+// 12. setButtonKeys
+{
+    const { canvas, input, controls } = setup();
+    const right = pos(controls, 'right');
+
+    canvas.dispatch('touchstart', touchEvent([{ id: 1, ...right }]));
+    assert(input.isPressed('ArrowRight') === true, '12: parte con ArrowRight');
+    controls.setButtonKeys('right', ['KeyD', 'KeyL']);
+    assert(input.isPressed('ArrowRight') === false, '12: i tasti vecchi vengono rilasciati');
+    assert(controls.buttons.right.key === 'KeyD', '12: key è il primo elemento');
+    assert(controls.buttons.right.keys.join() === 'KeyD,KeyL', '12: keys aggiornato');
+    canvas.dispatch('touchmove', touchEvent([{ id: 1, x: right.x + 2, y: right.y }]));
+    assert(input.isPressed('KeyD') === true && input.isPressed('KeyL') === true, '12: i tasti nuovi si accendono');
+    assert(input.isPressed('ArrowRight') === false, '12: ArrowRight non torna');
+    canvas.dispatch('touchend', touchEvent([]));
+    assert(input.isPressed('KeyD') === false && input.isPressed('KeyL') === false, '12: touchend rilascia i nuovi');
+
+    // L'array passato viene copiato.
+    const mine = ['KeyZ'];
+    controls.setButtonKeys('up', mine);
+    mine.push('KeyX');
+    mine[0] = 'KeyQ';
+    assert(controls.buttons.up.keys.join() === 'KeyZ' && controls.buttons.up.key === 'KeyZ', '12: copia dell\'array');
+
+    // Un solo tasto, e l'azione resta sua con Space + ' ' finché non la cambi.
+    controls.setButtonKeys('action', ['Enter']);
+    assert(controls.buttons.action.key === 'Enter' && controls.buttons.action.keys.join() === 'Enter', '12: un solo tasto');
+    canvas.dispatch('touchstart', touchEvent([{ id: 2, ...pos(controls, 'action') }]));
+    assert(input.isPressed('Enter') === true && input.isPressed('Space') === false, '12: l\'azione usa Enter');
+    canvas.dispatch('touchend', touchEvent([]));
+    controls.destroy();
+    input.destroy();
+}
+
+// 12b. input non validi: non cambia niente
+{
+    const { input, controls } = setup();
+    const before = JSON.stringify(controls.buttons);
+    const bad = [
+        ['nope', ['KeyA']],
+        ['toString', ['KeyA']],
+        ['__proto__', ['KeyA']],
+        [undefined, ['KeyA']],
+        [null, ['KeyA']],
+        [42, ['KeyA']],
+        ['left', []],
+        ['left', 'KeyA'],
+        ['left', null],
+        ['left', undefined],
+        ['left', [1]],
+        ['left', [null]],
+        ['left', ['KeyA', 2]],
+        ['left', ['']],
+        ['left', { 0: 'KeyA', length: 1 }]
+    ];
+    for (const [name, keys] of bad) {
+        controls.setButtonKeys(name, keys);
+        assert(JSON.stringify(controls.buttons) === before, `12b: ${String(name)} / ${JSON.stringify(keys)} non cambia nulla`);
+    }
+    controls.setButtonKeys();
+    assert(JSON.stringify(controls.buttons) === before, '12b: senza argomenti non cambia nulla');
+    controls.destroy();
+    input.destroy();
+}
+
+// 12c. un pulsante fermo non chiama setKey; un tasto condiviso resta premuto
+{
+    const canvas = canvasOf(800, 480);
+    const calls = [];
+    const down = new Set();
+    const input = {
+        setKey(k, v) {
+            calls.push([k, v]);
+            if (v) down.add(k);
+            else down.delete(k);
+        }
+    };
+    const controls = new BeeTouchControls(canvas, input);
+
+    controls.setButtonKeys('left', ['KeyQ']);
+    assert(calls.length === 0, '12c: pulsante non premuto, nessun setKey');
+
+    controls.setButtonKeys('left', ['ArrowLeft']);
+    controls.setButtonKeys('right', ['KeyA']);
+    controls.setButtonKeys('left', ['KeyA']);
+    canvas.dispatch('touchstart', touchEvent([{ id: 1, ...pos(controls, 'left') }, { id: 2, ...pos(controls, 'right') }]));
+    assert(down.has('KeyA'), '12c: KeyA premuto da due pulsanti');
+    controls.setButtonKeys('left', ['KeyB']);
+    assert(down.has('KeyA') === true, '12c: KeyA resta premuto, lo tiene ancora right');
+    canvas.dispatch('touchend', touchEvent([]));
+    assert(down.size === 0, '12c: alla fine tutto rilasciato');
+
+    // Se il pulsante era l'unico a tenere il tasto, lo rilascia.
+    canvas.dispatch('touchstart', touchEvent([{ id: 1, ...pos(controls, 'left') }]));
+    assert(down.has('KeyB') === true, '12c: KeyB premuto');
+    controls.setButtonKeys('left', ['KeyC']);
+    assert(down.has('KeyB') === false, '12c: KeyB rilasciato dal cambio');
+    controls.destroy();
+}
+
+// 13. draw senza contesto esce in silenzio
+{
+    const { input, controls } = setup();
+    controls.draw(null);
+    controls.draw(undefined);
+    controls.draw();
+    let calls = 0;
+    const spy = new Proxy({}, { get() { calls++; return () => {}; }, set() { return true; } });
+    controls.draw(spy);
+    assert(calls > 0, '13: con un contesto vero disegna ancora');
+    controls.destroy();
+    input.destroy();
+}
+
 console.log('BeeTouchControls tests ok');

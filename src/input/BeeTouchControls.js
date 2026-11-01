@@ -89,6 +89,42 @@ export class BeeTouchControls {
         this.activeTouches = next;
     }
 
+    /**
+     * Cambia i tasti di un pulsante. `tasti` è un array non vuoto di stringhe non vuote;
+     * il primo diventa `key`. Pulsante sconosciuto o array non valido: non fa niente.
+     * Prima rilascia i tasti che il pulsante sta tenendo (se un altro pulsante attivo
+     * li accende ancora, restano premuti).
+     */
+    setButtonKeys(name, keys) {
+        if (typeof name !== 'string' || !Object.prototype.hasOwnProperty.call(this.buttons, name)) return;
+        if (!Array.isArray(keys) || keys.length === 0) return;
+        for (let i = 0; i < keys.length; i++) {
+            if (typeof keys[i] !== 'string' || keys[i] === '') return;
+        }
+
+        let held = false;
+        const others = new Set();
+        for (const id in this.activeTouches) {
+            const active = this.activeTouches[id];
+            if (active === name) {
+                held = true;
+                continue;
+            }
+            const list = this.#keysOf(active);
+            for (let i = 0; i < list.length; i++) others.add(list[i]);
+        }
+        if (held) {
+            const old = this.#keysOf(name);
+            for (let i = 0; i < old.length; i++) {
+                if (!others.has(old[i])) this.input.setKey(old[i], false);
+            }
+        }
+
+        const button = this.buttons[name];
+        button.keys = keys.slice();
+        button.key = button.keys[0];
+    }
+
     updatePositions() {
         const rect = this.canvas.getBoundingClientRect();
 
@@ -154,6 +190,7 @@ export class BeeTouchControls {
     }
 
     draw(ctx) {
+        if (!ctx) return;
         ctx.save();
 
         for (const name in this.buttons) {

@@ -12,6 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.11.3] - 2026-11-01
+
+### Added
+
+- `BeeTouchControls.setButtonKeys(name, keys)` changes the keys of a button. `keys` is a non-empty array of non-empty strings; the first one becomes `key` and the array is copied into `keys`. An unknown button or an invalid array does nothing. The keys the button is holding are released first, unless another pressed button still sets the same key.
+
+### Fixed
+
+- `BeeTouchControls.draw` returns without a canvas context instead of throwing, like `BeeTouchButton.render`.
+
 ## [2.11.2] - 2026-11-01
 
 ### Added
