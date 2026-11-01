@@ -121,7 +121,7 @@ I moduli con un contratto da spiegare hanno la loro sezione più sotto. Una demo
 ## 📁 Struttura del Progetto Aggiornata
 
 ```text
-BeeEngine-V2.9/
+BeeEngine-V2.11.0/
 ├── index.html                  # Punto di ingresso HTML e configurazione Canvas
 ├── index.js                    # Barrel ESM (re-export di BeeEngine.js)
 ├── main.js                     # Demo visiva (BeeUI: anchor, stack, focus, HUD)
