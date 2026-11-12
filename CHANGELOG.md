@@ -12,6 +12,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.11.4] - 2026-11-12
+
+### Added
+
+- `BeeVirtualDPad.destroy()` removes the pointer listeners (kept as `onPointerDown`, `onPointerMove` and `onPointerUp`), releases the capture, and clears `state`, `isPressed` and `pointerId`. After it a `pointerdown` does not turn the pad on, and calling it twice is safe.
+- The constructor throws `BeeVirtualDPad: canvas required` without a config or a canvas, and a clear error when `x` or `y` is not a finite number or `size` is not a finite number greater than 0. The defaults are unchanged (`size` 120, `eightWay` false).
+- `BeeVirtualDPad.canvasPoint(e)` returns the pointer in canvas pixels, or `null` when the canvas box has no size or the scale is not finite. Events with a `null` point are ignored.
+- `examples/virtualdpad.html` shows the pad moving a square, with a key to switch between 4 and 8 directions.
+
+### Fixed
+
+- `BeeVirtualDPad` keeps the pointer until the finger lifts. In the dead zone every direction is off but `isPressed` and `pointerId` stay, and outside the circle the direction still follows the finger. Before, either case reset the pad and it ignored the finger until it touched again, so sliding through the center lost control.
+- Only the first finger owns the pad. A `pointerdown` from another pointer inside the radius is ignored while the pad is held. `pointerup` and `pointercancel` of the owner reset the pad and release the capture.
+- `BeeVirtualDPad.render` returns without a canvas context instead of throwing.
+- The cross is drawn as one `+` path with 12 vertices, so there are no stroke lines crossing in the center. The pressed arms and the colors are unchanged.
+- `radius` always follows `size` (`size / 2`), so setting `pad.size = 200` also grows the touch area and the dead zone. Setting `radius` changes `size`; an invalid value does nothing.
+
 ## [2.11.3] - 2026-11-01
 
 ### Added

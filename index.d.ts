@@ -2065,9 +2065,19 @@ export declare class BeeVirtualDPad {
   x: number;
   y: number;
   size: number;
+  /** Raggio dell'area toccabile. Segue sempre `size` (size / 2): cambiare uno cambia l'altro. */
+  radius: number;
   eightWay: boolean;
   state: { up: boolean; down: boolean; left: boolean; right: boolean };
+  /** `true` finché il dito che ha preso il pad è giù, anche nella zona morta. */
+  isPressed: boolean;
+  /** Il pointer proprietario, oppure `null`. */
+  pointerId: number | null;
 
+  /**
+   * Lancia `BeeVirtualDPad: canvas required`, oppure un errore se `x`, `y` non sono numeri
+   * finiti o `size` non è un numero finito maggiore di 0.
+   */
   constructor(options: {
     canvas: HTMLCanvasElement;
     x: number;
@@ -2076,8 +2086,14 @@ export declare class BeeVirtualDPad {
     eightWay?: boolean;
   });
 
+  /** Punto del pointer in coordinate canvas, oppure `null` se il canvas non ha dimensione. */
+  canvasPoint(e: { clientX: number; clientY: number }): { x: number; y: number } | null;
+  /** Azzera direzioni, `isPressed` e `pointerId`, e rilascia il capture. */
   resetState(): void;
-  render(ctx: CanvasRenderingContext2D): void;
+  /** Senza ctx non disegna. */
+  render(ctx: CanvasRenderingContext2D | null | undefined): void;
+  /** Toglie i listener e azzera lo stato. Si può chiamare più volte. */
+  destroy(): void;
 }
 
 export declare class BeeTouchButton {
