@@ -12,6 +12,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.12.0] - 2026-11-13
+
+### Added
+
+- `BeeQuest` plugin for quests and goals (name `'quest'`). The engine does not import it; attach it yourself. It only holds state: no drawing, no tick, no listeners of its own, and `BeeQuest.js` imports nothing. `BeeLocale` and `BeeInventory` are optional: they come from the options or from `engine.plugin('locale')` / `engine.plugin('inventory')`.
+- `define(id, def)` and `defineAll` register quests with `title`, `description` (each with a `*Key` for `BeeLocale`), `goals`, `mode` (`'all'` or `'any'`), `order` (`'free'` or `'sequential'`), `requires` and `rewards`. A malformed definition throws (duplicate or empty id, goal without id or duplicated, `flag` goal without `flag`, `equals` together with `min`, `count` goal without an integer `target` of at least 1); a bad `mode`, `order` or reward only warns.
+- Goal types `manual`, `flag` (`equals`, or `min` for numbers) and `count` (`target`), plus your own with `defineGoalType(type, check)`. `check(goal, { flag, progress, status })` must be pure; if it throws it counts as false. An unknown type warns and behaves like `manual`. Optional goals do not block completion in `mode: 'all'`.
+- `start`, `complete`, `addProgress`, `completeQuest`, `fail`, `reset` and `evaluate` change the state; a wrong call returns `false` and warns. `status`, `isActive`, `isDone`, `goalDone`, `progress`, `describe` and `list` read it; `describe` and `list` return copies with the texts already resolved.
+- Game flags with `setFlag`, `flag`, `clearFlag` and `flags` (`string`, finite `number`, `boolean` or `null`). `flag` goals close by themselves and stay closed.
+- Declarative rewards on quests and goals, given once until `reset`: `item` goes through `inventory.add(id, qty)` and counts as granted only if all of it fits (a partial delivery is undone with `remove`); `flag` writes the flag; any other type is only emitted with `granted: false`.
+- `onChange(fn)` returns `off` and emits `define`, `start`, `goal`, `progress`, `done`, `fail`, `reset`, `flag`, `reward` and `restore`. Events are queued and sent in order once the state is consistent; a listener or a check can change the state without recursion, and a loop that never settles stops after 10000 passes with a warning. A listener that throws only warns.
+- `toJSON` saves flags and the state of each quest and goal (not the definitions). `fromJSON` runs after the `define` calls, emits only `restore`, does not grant rewards again and does not call `evaluate()`. `clear()` resets the state and keeps the definitions; `clear({ definitions: true })` removes them too.
+- `src/plugins/index.js` and `index.d.ts` export `BeeQuest` and its types, `scripts/test-beequest.mjs` covers it, and `examples/quest.html` shows it with `BeeDialogue`, `BeeInventory` and `BeeLocale` (E talk, C coin, O secret, Q journal, S save, L load, G language, R restart).
+
 ## [2.11.4] - 2026-11-12
 
 ### Added

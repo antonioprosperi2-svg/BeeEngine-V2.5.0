@@ -2476,6 +2476,176 @@ export declare class BeeDialogue implements BeePlugin {
   clear(): this;
 }
 
+export interface BeeQuestReward {
+  /** Aperto. La v1 consegna `'item'` e `'flag'`; gli altri tipi sono solo emessi con `granted: false`. */
+  type: string;
+  /** `'item'`: id oggetto. `'flag'`: chiave del flag. */
+  id?: string;
+  /** `'item'`: quantità (default 1). */
+  qty?: number;
+  /** `'flag'`: valore da scrivere (default `true`). */
+  value?: unknown;
+  data?: Record<string, unknown>;
+}
+
+export interface BeeQuestGoal {
+  /** Non vuoto, unico dentro la quest. */
+  id: string;
+  /** Aperto. Default `'manual'`. v1: `'manual' | 'flag' | 'count'`, più i tipi di `defineGoalType`. */
+  type?: string;
+  label?: string;
+  /** Chiave `BeeLocale`. */
+  labelKey?: string;
+  /** Non blocca il completamento della quest (solo `mode: 'all'`). */
+  optional?: boolean;
+  /** Solo informativo per la UI. */
+  hidden?: boolean;
+  /** `type: 'flag'`: chiave del flag. */
+  flag?: string;
+  /** `type: 'flag'`: valore atteso (default `true`). Non insieme a `min`. */
+  equals?: unknown;
+  /** `type: 'flag'`: flag numerico `>= min`. Non insieme a `equals`. */
+  min?: number;
+  /** `type: 'count'`: intero `>= 1`. */
+  target?: number;
+  rewards?: BeeQuestReward[];
+  data?: Record<string, unknown>;
+  /** I campi sconosciuti vengono conservati. */
+  [extra: string]: unknown;
+}
+
+export interface BeeQuestDef {
+  title?: string;
+  titleKey?: string;
+  description?: string;
+  descriptionKey?: string;
+  goals: BeeQuestGoal[];
+  /** `'all'` (default): tutti i goal non opzionali. `'any'`: basta un goal. */
+  mode?: "all" | "any";
+  /** `'free'` (default) o `'sequential'`: i goal si sbloccano in ordine. */
+  order?: "free" | "sequential";
+  /** Quest che devono essere `'done'` prima di `start`. */
+  requires?: string[];
+  rewards?: BeeQuestReward[];
+  data?: Record<string, unknown>;
+}
+
+export type BeeQuestStatus = "inactive" | "active" | "done" | "failed";
+
+export interface BeeQuestOptions {
+  engine?: BeeEngine;
+  /** Solo per le ricompense `'item'`. Senza, si cerca `engine.plugin('inventory')`. */
+  inventory?: { add(...args: any[]): unknown } | null;
+  /** Senza, si cerca `engine.plugin('locale')`. */
+  locale?: { t(key: string): string } | null;
+}
+
+export type BeeQuestChange =
+  | { type: "define"; id: string }
+  | { type: "start"; id: string }
+  | { type: "goal"; id: string; goalId: string }
+  | { type: "progress"; id: string; goalId: string; value: number; target: number }
+  | { type: "done"; id: string }
+  | { type: "fail"; id: string; reason: string }
+  | { type: "reset"; id: string }
+  | { type: "flag"; key: string; value: unknown; previous: unknown }
+  | { type: "reward"; id: string; goalId?: string; reward: BeeQuestReward; granted: boolean }
+  | { type: "restore" };
+
+export interface BeeQuestGoalView {
+  id: string;
+  /** Il tipo dichiarato (anche se sconosciuto). */
+  type: string;
+  label: string;
+  done: boolean;
+  /** Sbloccato dall'ordine (`order: 'sequential'`). */
+  available: boolean;
+  optional: boolean;
+  hidden: boolean;
+  /** Solo `count`. */
+  progress?: number;
+  target?: number;
+  /** `data` del goal più i suoi campi sconosciuti. */
+  data: Record<string, unknown>;
+}
+
+export interface BeeQuestView {
+  id: string;
+  status: BeeQuestStatus;
+  title: string;
+  description: string;
+  mode: "all" | "any";
+  order: "free" | "sequential";
+  goals: BeeQuestGoalView[];
+  rewarded: boolean;
+  data: Record<string, unknown>;
+}
+
+export interface BeeQuestSave {
+  version: number;
+  flags: Record<string, string | number | boolean | null>;
+  quests: Record<
+    string,
+    {
+      status: BeeQuestStatus;
+      rewarded: boolean;
+      goals: Record<string, { done: boolean; progress?: number; rewarded?: boolean }>;
+    }
+  >;
+}
+
+/** Stato di quest e obiettivi. Solo logica: niente disegno, niente `onTick`. */
+export declare class BeeQuest implements BeePlugin {
+  engine: BeeEngine | null;
+
+  constructor(options?: BeeQuestOptions);
+  attach(engine: BeeEngine): this;
+  /** Non azzera definizioni né stato. */
+  detach(): this;
+  /** Id duplicato, goal senza id o duplicato, `flag` senza `flag`, `equals` con `min`, `count` senza `target`: lancia. */
+  define(id: string, def: BeeQuestDef): this;
+  defineAll(defs: Record<string, BeeQuestDef> | Array<BeeQuestDef & { id: string }>): this;
+  /** `check` deve essere pura. `progress(goalId)` riguarda la quest del goal. */
+  defineGoalType(
+    type: string,
+    check: (
+      goal: BeeQuestGoal,
+      api: {
+        flag(key: string): unknown;
+        progress(goalId: string): number;
+        status(questId: string): BeeQuestStatus | null;
+      }
+    ) => boolean
+  ): this;
+  has(id: string): boolean;
+  ids(): string[];
+  start(id: string): boolean;
+  complete(questId: string, goalId: string): boolean;
+  addProgress(questId: string, goalId: string, amount?: number): boolean;
+  completeQuest(id: string): boolean;
+  fail(id: string, reason?: string): boolean;
+  reset(id: string): boolean;
+  evaluate(): this;
+  status(id: string): BeeQuestStatus | null;
+  isActive(id: string): boolean;
+  isDone(id: string): boolean;
+  goalDone(questId: string, goalId: string): boolean;
+  progress(questId: string, goalId: string): { value: number; target: number } | null;
+  describe(id: string): BeeQuestView | null;
+  list(status?: BeeQuestStatus): BeeQuestView[];
+  setFlag(key: string, value: string | number | boolean | null): boolean;
+  flag(key: string, fallback?: unknown): unknown;
+  clearFlag(key: string): boolean;
+  flags(): Record<string, unknown>;
+  setInventory(inventory: BeeQuestOptions["inventory"]): this;
+  setLocale(locale: BeeQuestOptions["locale"]): this;
+  onChange(fn: (event: BeeQuestChange) => void): () => void;
+  toJSON(): BeeQuestSave;
+  /** Da chiamare dopo i `define`. Emette solo `restore` e non chiama `evaluate()`. */
+  fromJSON(data: Partial<BeeQuestSave> | null | undefined): this;
+  clear(options?: { definitions?: boolean }): this;
+}
+
 export declare class BeeEngine {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;

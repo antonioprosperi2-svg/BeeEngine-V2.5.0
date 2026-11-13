@@ -3,12 +3,13 @@
   <img src="https://beeenginejs.com/wp-content/uploads/2026/10/bee-animated.gif" alt="BeeEngine Logo" width="900" />
 </p>
 
-# 🐝 Motore di gioco 2D BeeEngine (v2.11.4 Professional)
+# 🐝 Motore di gioco 2D BeeEngine (v2.12.0 Professional)
 
 BeeEngine è un motore di gioco 2D leggero, modulare e altamente ottimizzato scritto in puro JavaScript moderno (ES Modules) per HTML5 Canvas.
 
 ## 🆕 Novità
 
+* **2.12.0** — `BeeQuest`, nuovo plugin per quest e obiettivi: goal `manual`, `flag` e `count` (più tipi tuoi con `defineGoalType`), flag di gioco, ricompense `item` e `flag` date una sola volta, salvataggio. Non disegna e non ha tick. Demo: `examples/quest.html`.
 * **2.11.4** — `BeeVirtualDPad`: il dito resta del pad finché non si alza (zona morta e fuori dal cerchio non lo perdono più), un solo dito comanda, `destroy`, controlli sul costruttore, croce in un solo percorso. Demo: `examples/virtualdpad.html`.
 * **2.11.3** — `BeeTouchControls.setButtonKeys(nome, tasti)` cambia i tasti di un pulsante (rilascia prima quelli attivi) e `draw` senza contesto esce in silenzio.
 * **2.11.2** — `BeeInput.addTouchBlocker`: un tocco su un pulsante di `BeeTouchControls` non è più un clic del mouse, quindi un `BeeButton` o un `BeeMenuScene` sotto il pulsante non scatta. Demo: `examples/touchcontrols.html` (contatore «clic»).
@@ -104,6 +105,7 @@ I moduli con un contratto da spiegare hanno la loro sezione più sotto. Una demo
 | `BeeLocale` | stringhe per lingua con fallback: `t(key)` | `examples/inventory.html` |
 | `BeeInventory` | stack di oggetti, uso, equipaggiamento, salvataggio degli slot | `examples/inventory.html` |
 | `BeeDialogue` | alberi di dialogo con scelte e salvataggio | `examples/dialogue.html` |
+| `BeeQuest` | quest, obiettivi, flag di gioco e ricompense, con salvataggio | `examples/quest.html` |
 
 
 
@@ -141,7 +143,7 @@ BeeEngine-V2.11.0/
     ├── input/                  # Tastiera, mouse, joystick, touch, button
     ├── ui/                     # BeeUI: Control, panel, stack, label, button, nine-slice
     ├── physics/                # BeeSpatialHash, BeePhysicsWorld, BeeRigidBody, AABB groups
-    ├── plugins/                # contratto + BeeLocale + BeeInventory + BeeDialogue (il motore non importa questi file)
+    ├── plugins/                # contratto + BeeLocale + BeeInventory + BeeDialogue + BeeQuest (il motore non importa questi file)
     └── debug/                  # BeeLadybug: overlay e hitbox
 ```
 
@@ -539,7 +541,7 @@ Il motore **non importa** i plugin. Contratto in `src/plugins/PLUGIN_CONTRACT.md
 
 ```javascript
 import { BeeEngine } from 'beeengine';
-import { BeeLocale, BeeInventory, BeeDialogue } from 'beeengine/plugins';
+import { BeeLocale, BeeInventory, BeeDialogue, BeeQuest } from 'beeengine/plugins';
 
 const gioco = new BeeEngine('testCanvas', 800, 600);
 const locale = new BeeLocale({
@@ -577,11 +579,28 @@ dialogue.load({
     ]
 });
 // nella scena: scene.update → dialogue.handleInput(input); scene.draw → dialogue.draw(ctx)
+
+const quest = new BeeQuest({ engine: gioco, inventory, locale });
+quest.define('chiave', {
+    titleKey: 'quest_key',
+    goals: [
+        { id: 'parla', type: 'flag', flag: 'parlato' },
+        { id: 'monete', type: 'count', target: 3 },
+        { id: 'segreto', optional: true }
+    ],
+    rewards: [{ type: 'item', id: 'potion' }]
+});
+quest.start('chiave');
+quest.setFlag('parlato', true);          // chiude 'parla'
+quest.addProgress('chiave', 'monete');   // 1/3
+quest.onChange((ev) => { /* start, goal, progress, done, fail, reset, flag, reward, ... */ });
 ```
 
 `BeeLocale` è pura lettura. Chi disegna chiama `t(key)`. `BeeInventory` non disegna e non entra nel loop: `add` dice sempre cosa non è entrato (`left`), `equip` / `unequip` o riescono per intero o lasciano lo stato com'era. Le definizioni restano nel codice; `toJSON` salva solo slot ed equipaggiamento. Demo: `examples/inventory.html` (collectible + conteggi via `BeeLocale.t`). Test: `node scripts/test-beeinventory.mjs`.
 
-`BeeDialogue` tiene lo stato di un albero di dialogo (speaker, testo, scelte) e non ha né tick né listener propri: la scena chiama `handleInput(input)` in `update` e `draw(ctx)` in `scene.draw` (spazio schermo, dopo la camera). Un nodo senza `choices` si avanza con `advance()`, uno con `choices` con `choose(index)`; il verbo sbagliato è `false` e avvisa. `*Key` si risolve con un locale (opzione, `setLocale` o `engine.plugin('locale')`), senza locale vale il letterale o la chiave grezza, mai vuoto. `onChange` emette `start`, `node`, `choice`, `advance`, `end` (con `reason`: `finished`, `cancel`, `restart`, `reload`, `missing-node`). `start()` da aperto fa un restart pulito. L'albero con id duplicati o malformato lancia al `load`; un `next` che non esiste avvisa al load e a runtime chiude con `missing-node`. `toJSON` salva albero e stato; `fromJSON` riapre sul nodo salvato emettendo solo `node`. Demo: `examples/dialogue.html` (E interagisci, L cambia lingua). Test: `node scripts/test-beedialogue.mjs`. Prossimi (uno alla volta): Light, Quest, Net, Post, Spine.
+`BeeDialogue` tiene lo stato di un albero di dialogo (speaker, testo, scelte) e non ha né tick né listener propri: la scena chiama `handleInput(input)` in `update` e `draw(ctx)` in `scene.draw` (spazio schermo, dopo la camera). Un nodo senza `choices` si avanza con `advance()`, uno con `choices` con `choose(index)`; il verbo sbagliato è `false` e avvisa. `*Key` si risolve con un locale (opzione, `setLocale` o `engine.plugin('locale')`), senza locale vale il letterale o la chiave grezza, mai vuoto. `onChange` emette `start`, `node`, `choice`, `advance`, `end` (con `reason`: `finished`, `cancel`, `restart`, `reload`, `missing-node`). `start()` da aperto fa un restart pulito. L'albero con id duplicati o malformato lancia al `load`; un `next` che non esiste avvisa al load e a runtime chiude con `missing-node`. `toJSON` salva albero e stato; `fromJSON` riapre sul nodo salvato emettendo solo `node`. Demo: `examples/dialogue.html` (E interagisci, L cambia lingua). Test: `node scripts/test-beedialogue.mjs`. 
+
+`BeeQuest` tiene lo stato di quest e obiettivi e non disegna né ha tick: il gioco chiama `setFlag`, `complete`, `addProgress` e legge lo stato con `describe(id)` / `list(status)` (copie con i testi già risolti). Una quest ha `mode` (`all` o `any`), `order` (`free` o `sequential`) e `requires`; un goal `optional` non blocca il completamento. I goal `flag` e quelli dei tipi registrati si chiudono da soli quando cambia lo stato; dopo un `fromJSON` chiama tu `evaluate()`. Gli eventi di `onChange` (`define`, `start`, `goal`, `progress`, `done`, `fail`, `reset`, `flag`, `reward`, `restore`) partono in ordine, a stato già coerente, e un listener può cambiare lo stato senza anelli. Le ricompense sono dichiarative: `item` (via `BeeInventory.add`, consegnato per intero o per niente), `flag`, oppure un tipo tuo che arriva solo come evento con `granted: false`. Una definizione malformata lancia in `define`; il resto avvisa e ritorna `false`. `toJSON` salva solo lo stato (flag, quest, goal), non le definizioni. Demo: `examples/quest.html` (E parla, C moneta, O segreto, Q diario, S salva, L carica, G lingua, R ricomincia). Test: `node scripts/test-beequest.mjs`. Prossimi (uno alla volta): Light, Net, Post, Spine.
 
 ## 🎬 BeeSceneManager — replace, non stack
 
