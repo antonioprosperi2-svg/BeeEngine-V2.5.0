@@ -4,10 +4,14 @@
 </p>
 
 # 🐝 Motore di gioco 2D BeeEngine (v2.12.0 Professional)
-![npm](https://img.shields.io/npm/v/beeengine)
-![download](https://img.shields.io/npm/dm/beeengine)
-![jsDelivr](https://img.shields.io/jsdelivr/npm/hm/beeengine)
-![licenza](https://img.shields.io/npm/l/beeengine)
+[![npm](https://img.shields.io/npm/v/beeengine)](https://www.npmjs.com/package/beeengine)
+[![download](https://img.shields.io/npm/dm/beeengine)](https://www.npmjs.com/package/beeengine)
+[![jsDelivr](https://img.shields.io/jsdelivr/npm/hm/beeengine)](https://www.jsdelivr.com/package/npm/beeengine)
+[![licenza](https://img.shields.io/npm/l/beeengine)](https://www.npmjs.com/package/beeengine)
+[![Socket Badge](https://badge.socket.dev/npm/package/beeengine/2.12.0)](https://badge.socket.dev/npm/package/beeengine/2.12.0)
+[![size](https://img.shields.io/bundlephobia/minzip/beeengine)](https://bundlephobia.com/package/beeengine)
+[![Snyk](https://snyk.io/test/npm/beeengine/badge.svg)](https://security.snyk.io/package/npm/beeengine)
+
 
 BeeEngine è un motore di gioco 2D leggero, modulare e altamente ottimizzato scritto in puro JavaScript moderno (ES Modules) per HTML5 Canvas.
 
