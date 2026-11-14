@@ -12,6 +12,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.12.1] - 2026-11-14
+
+### Fixed
+
+- `BeeBullet` drops a bullet only when its rectangle is outside the camera view, expanded by 200 world pixels on every side. The view comes from `engine.camera.getViewBounds()`; without a camera it is the canvas at `(0, 0)`. A bullet on the border, or within those 200 pixels, stays alive. Width or height `0` is just the point `worldX`/`worldY`. Without `engine` or `engine.canvas` there is no edge test. `lifespan` of `0` or less still never expires on its own.
+- `BeeBullet.draw` returns when `ctx` is missing. The texture comes from `engine.assets.getImage(textureKey)` when that is a function; if there is no image, or the value has no numeric `width`, it draws the same gold rectangle.
+
+### Added
+
+- `examples/bullet.html` fires pooled bullets while the camera follows the shooter, so a bullet past the canvas origin stays on screen. `scripts/test-beebullet.mjs` covers lifespan, the view margin, drawing and the pool.
+
 ## [2.12.0] - 2026-11-13
 
 ### Added

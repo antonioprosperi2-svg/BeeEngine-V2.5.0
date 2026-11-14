@@ -873,7 +873,8 @@ export declare class BeeBullet extends BeeEntity {
   ): this;
   recycle(): void;
   update(dt: number, input?: BeeInput, engine?: BeeEngine): void;
-  draw(ctx: CanvasRenderingContext2D, engine?: BeeEngine): void;
+  /** Senza ctx non disegna. La texture è un'immagine di assets.getImage. */
+  draw(ctx: CanvasRenderingContext2D | null | undefined, engine?: BeeEngine): void;
 }
 
 export declare class BeePlatform extends BeeEntity {

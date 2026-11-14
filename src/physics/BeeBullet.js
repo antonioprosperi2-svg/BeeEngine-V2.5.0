@@ -47,25 +47,51 @@ export class BeeBullet extends BeeEntity {
         }
 
         super.update(dt, input, engine);
+        if (this.destroyed || !engine || !engine.canvas) return;
 
-        if (engine && engine.canvas) {
-            const margin = 200;
-            if (this.worldX < -margin || this.worldX > engine.canvas.width + margin ||
-                this.worldY < -margin || this.worldY > engine.canvas.height + margin) {
-                this.destroy();
+        // Inquadratura, non l'angolo del canvas: con la telecamera un proiettile
+        // inquadrato può avere worldX molto più grande di canvas.width.
+        // isRectVisibleInView con width o height 0 ritorna false: il punto morirebbe subito.
+        const margin = 200;
+        let viewX = 0;
+        let viewY = 0;
+        let viewW = engine.canvas.width;
+        let viewH = engine.canvas.height;
+        const camera = engine.camera;
+        if (camera && typeof camera.getViewBounds === 'function') {
+            const view = camera.getViewBounds();
+            if (view) {
+                viewX = view.x;
+                viewY = view.y;
+                viewW = view.width;
+                viewH = view.height;
             }
         }
+
+        const w = this.width || 0;
+        const h = this.height || 0;
+        const outside = this.worldX + w < viewX - margin
+            || this.worldX > viewX + viewW + margin
+            || this.worldY + h < viewY - margin
+            || this.worldY > viewY + viewH + margin;
+        if (outside) this.destroy();
     }
 
     draw(ctx, engine) {
-        const texture = (engine && this.textureKey) ? engine.getAsset(this.textureKey) : null;
-        if (texture) {
+        if (!ctx) return;
+
+        const assets = engine && engine.assets;
+        const texture = (this.textureKey && assets && typeof assets.getImage === 'function')
+            ? assets.getImage(this.textureKey)
+            : null;
+        if (texture && typeof texture.width === 'number') {
             ctx.drawImage(texture, this.worldX, this.worldY, this.width, this.height);
-        } else {
-            ctx.save();
-            ctx.fillStyle = "#FFD700";
-            ctx.fillRect(this.worldX, this.worldY, this.width, this.height);
-            ctx.restore();
+            return;
         }
+
+        ctx.save();
+        ctx.fillStyle = "#FFD700";
+        ctx.fillRect(this.worldX, this.worldY, this.width, this.height);
+        ctx.restore();
     }
 }
