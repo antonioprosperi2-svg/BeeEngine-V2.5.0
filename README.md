@@ -4,7 +4,7 @@
 [![download](https://img.shields.io/npm/dm/beeengine)](https://www.npmjs.com/package/beeengine)
 [![](https://data.jsdelivr.com/v1/package/npm/beeengine/badge)](https://www.jsdelivr.com/package/npm/beeengine)
 [![licenza](https://img.shields.io/npm/l/beeengine)](https://github.com/antonioprosperi2-svg/BeeEngine-V2.5.0/blob/main/LICENSE)
-[![Socket Badge](https://badge.socket.dev/npm/package/beeengine/2.12.1)](https://badge.socket.dev/npm/package/beeengine/2.12.1)
+[![Socket Badge](https://badge.socket.dev/npm/package/beeengine)](https://socket.dev/npm/package/beeengine)
 [![size](https://img.shields.io/bundlephobia/minzip/beeengine)](https://bundlephobia.com/package/beeengine)
 [![Snyk](https://snyk.io/test/npm/beeengine/badge.svg)](https://security.snyk.io/package/npm/beeengine)
 
