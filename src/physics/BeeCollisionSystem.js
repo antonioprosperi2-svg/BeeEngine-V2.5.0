@@ -15,12 +15,10 @@ export class BeeCollisionSystem {
         this.hash = new BeeSpatialHash();
         this.#activeA = [];
         this.#activeB = [];
-        this.#query = [];
     }
 
     #activeA;
     #activeB;
-    #query;
 
     clear() {
         this.groups.clear();
@@ -29,7 +27,14 @@ export class BeeCollisionSystem {
         return this;
     }
 
+    #requireName(name) {
+        if (typeof name !== 'string' || name === '') {
+            throw new Error('BeeCollisionSystem: name required');
+        }
+    }
+
     createGroup(name) {
+        this.#requireName(name);
         if (!this.groups.has(name)) {
             this.groups.set(name, []);
         }
@@ -37,11 +42,16 @@ export class BeeCollisionSystem {
     }
 
     setGroup(name, entities) {
-        this.groups.set(name, Array.isArray(entities) ? entities.slice() : []);
+        this.#requireName(name);
+        if (!Array.isArray(entities)) {
+            throw new Error('BeeCollisionSystem.setGroup: entities must be an array');
+        }
+        this.groups.set(name, entities.slice());
         return this;
     }
 
     add(name, entity) {
+        this.#requireName(name);
         this.createGroup(name);
         const list = this.groups.get(name);
         if (entity && !list.includes(entity)) {
@@ -51,6 +61,7 @@ export class BeeCollisionSystem {
     }
 
     remove(name, entity) {
+        this.#requireName(name);
         const list = this.groups.get(name);
         if (!list) return this;
         const index = list.indexOf(entity);
@@ -72,12 +83,29 @@ export class BeeCollisionSystem {
     }
 
     solid(moversGroup, solidsGroup) {
-        this.rules.push({ type: 'solid', movers: moversGroup, solids: solidsGroup });
+        this.#requireName(moversGroup);
+        this.#requireName(solidsGroup);
+        const exists = this.rules.some((rule) =>
+            rule.type === 'solid' && rule.movers === moversGroup && rule.solids === solidsGroup
+        );
+        if (!exists) {
+            this.rules.push({ type: 'solid', movers: moversGroup, solids: solidsGroup });
+        }
         return this;
     }
 
     overlap(groupA, groupB, callback) {
-        this.rules.push({ type: 'overlap', a: groupA, b: groupB, callback });
+        this.#requireName(groupA);
+        this.#requireName(groupB);
+        if (typeof callback !== 'function') {
+            throw new Error('BeeCollisionSystem.overlap: callback required');
+        }
+        const exists = this.rules.some((rule) =>
+            rule.type === 'overlap' && rule.a === groupA && rule.b === groupB && rule.callback === callback
+        );
+        if (!exists) {
+            this.rules.push({ type: 'overlap', a: groupA, b: groupB, callback });
+        }
         return this;
     }
 
@@ -93,8 +121,8 @@ export class BeeCollisionSystem {
     }
 
     #resolveSolid(moversGroup, solidsGroup) {
-        const movers = this.#fillActive(moversGroup, this.#activeA);
-        const solids = this.#fillActive(solidsGroup, this.#activeB);
+        const movers = this.#fillActive(moversGroup, this.#activeA).slice();
+        const solids = this.#fillActive(solidsGroup, this.#activeB).slice();
         if (movers.length === 0 || solids.length === 0) return;
 
         const hash = this.hash;
@@ -107,7 +135,7 @@ export class BeeCollisionSystem {
             const mover = movers[i];
             if (typeof mover.resolvePlatformCollision !== 'function') continue;
             const box = spatialAabbOf(mover);
-            const nearby = hash.query(box, this.#query);
+            const nearby = hash.query(box).slice();
             for (let j = 0; j < nearby.length; j++) {
                 mover.resolvePlatformCollision(nearby[j]);
             }
@@ -115,23 +143,32 @@ export class BeeCollisionSystem {
     }
 
     #resolveOverlap(groupA, groupB, callback) {
-        const listA = this.#fillActive(groupA, this.#activeA);
-        const listB = this.#fillActive(groupB, this.#activeB);
+        const listA = this.#fillActive(groupA, this.#activeA).slice();
+        const listB = this.#fillActive(groupB, this.#activeB).slice();
         if (listA.length === 0 || listB.length === 0) return;
 
+        const same = groupA === groupB;
         const hash = this.hash;
         hash.clear();
-        for (let i = 0; i < listB.length; i++) {
-            hash.insert(listB[i], spatialAabbOf(listB[i]));
+        const indexed = same ? listA : listB;
+        for (let i = 0; i < indexed.length; i++) {
+            hash.insert(indexed[i], spatialAabbOf(indexed[i]));
+        }
+
+        const order = same ? new Map() : null;
+        if (order) {
+            for (let i = 0; i < listA.length; i++) order.set(listA[i], i);
         }
 
         const engine = this.engine;
         for (let i = 0; i < listA.length; i++) {
             const a = listA[i];
-            const nearby = hash.query(spatialAabbOf(a), this.#query);
+            const nearby = hash.query(spatialAabbOf(a)).slice();
             for (let j = 0; j < nearby.length; j++) {
                 const b = nearby[j];
                 if (a === b) continue;
+                // Stesso gruppo: una coppia non ordinata, nell'ordine del gruppo.
+                if (order && !(order.get(b) > i)) continue;
                 const hit = a.collidesWith
                     ? a.collidesWith(b)
                     : engine.checkCollision(a, b);

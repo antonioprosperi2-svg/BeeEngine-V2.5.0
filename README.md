@@ -1,4 +1,4 @@
-# 🐝 Motore di gioco 2D BeeEngine (v2.12.1 Professional)
+# 🐝 Motore di gioco 2D BeeEngine (v2.12.2 Professional)
 [![types](https://img.shields.io/npm/types/beeengine)](https://www.npmjs.com/package/beeengine)
 [![npm](https://img.shields.io/npm/v/beeengine)](https://www.npmjs.com/package/beeengine)
 [![download](https://img.shields.io/npm/dm/beeengine)](https://www.npmjs.com/package/beeengine)
@@ -19,6 +19,7 @@ BeeEngine è un motore di gioco 2D leggero, modulare e altamente ottimizzato scr
 
 ## 🆕 Novità
 
+* **2.12.2** — `BeeCollisionSystem`: l'overlap sullo stesso gruppo esce una volta per coppia; `run` non perde i contatti se un callback interroga l'hash; nomi vuoti, `setGroup` non-array e callback mancante lanciano subito; regole `solid` e `overlap` già registrate non si duplicano.
 * **2.12.1** — `BeeBullet`: il fuori-schermo segue l'inquadratura (telecamera o canvas) con 200 pixel di margine, non l'angolo del canvas. `draw` senza contesto esce; la texture arriva da `assets.getImage`. Demo: `examples/bullet.html`.
 * **2.12.0** — `BeeQuest`, nuovo plugin per quest e obiettivi: goal `manual`, `flag` e `count` (più tipi tuoi con `defineGoalType`), flag di gioco, ricompense `item` e `flag` date una sola volta, salvataggio. Non disegna e non ha tick. Demo: `examples/quest.html`.
 * **2.11.4** — `BeeVirtualDPad`: il dito resta del pad finché non si alza (zona morta e fuori dal cerchio non lo perdono più), un solo dito comanda, `destroy`, controlli sul costruttore, croce in un solo percorso. Demo: `examples/virtualdpad.html`.

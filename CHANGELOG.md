@@ -12,6 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.12.2] - 2026-11-17
+
+### Fixed
+
+- `BeeCollisionSystem.overlap` on one group reports each unordered pair once, in group order, and never an entity against itself. Two different group names stay one call per contact, `(a, b, engine)`.
+- `run` copies the entity lists and the neighbors returned by the spatial hash before it walks them. A callback that calls `hash.query()` or `run()` again no longer clears the arrays the current pass is reading. Inactive and destroyed entities are still skipped and stay in the group.
+- `setGroup` throws if `entities` is not an array and leaves the existing group in place. An empty array still clears the group. An empty name in `createGroup`, `setGroup`, `add`, `remove`, `solid` and `overlap` throws `BeeCollisionSystem: name required`.
+- `overlap` throws `BeeCollisionSystem.overlap: callback required` immediately when the callback is not a function.
+- `solid` ignores a pair of group names that is already registered. `overlap` ignores the same two names with the same function. A second function on the same groups stays a second rule, and the first registration keeps its order.
+
 ## [2.12.1] - 2026-11-14
 
 ### Fixed

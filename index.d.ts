@@ -427,12 +427,13 @@ export declare class BeeCollisionSystem {
 
   constructor(engine: BeeEngine);
 
-  clear(): void;
+  clear(): this;
   createGroup(name: string): this;
   setGroup(name: string, entities: object[]): this;
   add(name: string, entity: object): this;
   remove(name: string, entity: object): this;
   solid(moversGroup: string, solidsGroup: string): this;
+  /** Stesso gruppo: una volta per coppia, mai un'entità contro se stessa. */
   overlap(groupA: string, groupB: string, callback: BeeOverlapCallback): this;
   run(): void;
 }
